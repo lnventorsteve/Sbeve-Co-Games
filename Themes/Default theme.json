@@ -1,0 +1,27 @@
+{"Colors": {
+  "Text color": [
+    255,
+    255,
+    255
+  ],
+  "Border color": [
+    128,
+    128,
+    128
+  ],
+  "Background color": [
+    64,
+    64,
+    64
+  ]
+},
+  "Sounds": {
+    "button": {"name":"click.mp3", "volume": 100}
+  },
+  "Fonts": {
+    "Arial": 12
+  },
+  "Properties": {
+    "Border Thickness": 2
+  }
+}
