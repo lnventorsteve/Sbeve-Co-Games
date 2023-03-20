@@ -1,5 +1,3 @@
-import sys
-sys.path.append('Lib')
 import time
 import pygame
 from Network import Network
