@@ -55,6 +55,8 @@ class chat:
         if action != None:
             if action == "back":
                 self.screen_pointer = "main_menu"
+            if action == "close":
+                return "close"
 
 
         if self.screen_pointer == "main_menu":
@@ -179,7 +181,7 @@ class chat:
                 if pos > y+sy-self.theme.font.size("Qq")[1]:
                     break
             self.pychat_input.update(Input)
-            if gui.button(self.theme, (x+sx/2-15, y+sy/2-7.5), (30, 15), "Send", Input):
+            if gui.button(self.theme, (x+sx/2-15, y+sy/2-7.5), (30, 15), "Send", Input) or 13 in self.Input.keys:
                 self.n.send({"packet": "send_message", "message": self.pychat_input.get_text(), "player": self.player.name,"ID":self.server_ID})
                 self.pychat_input.change_text("")
         return self.ping

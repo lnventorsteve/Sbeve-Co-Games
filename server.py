@@ -65,7 +65,6 @@ def client(conn,addr):
     while True:
         try:
             data = conn.recv(2048).decode("utf-8")
-            print((f"Received {data}"))
             if data == "":
                 print(addr, "disconnected", "at", datetime.now().strftime("%I:%M:%S%p"))
                 clients.remove(addr)
@@ -198,7 +197,6 @@ def client(conn,addr):
                     conn.sendall(str.encode('{"packet":"disconnected"}'))
                     break
 
-            print(f"sending {reply}")
             conn.sendall(str.encode(reply))
         except Exception:
             print(data)

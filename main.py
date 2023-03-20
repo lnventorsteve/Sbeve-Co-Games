@@ -272,7 +272,8 @@ if __name__ == "__main__":
                             pychat = False
                             popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25* scale), (0, -current_h / (2 * scale) + 15), 2, 3, (300, 15), "Failed to connect to server")
                     else:
-                        chat.update(Input)
+                        if chat.update(Input) == "close":
+                            pychat = False
 
                 if main_screen[-1] == "main_menu":
                     temp = theme.font

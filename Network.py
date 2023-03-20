@@ -10,9 +10,7 @@ from datetime import datetime
 class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET ,socket.SOCK_STREAM)
-        #self.server = "170.199.29.55"
-        #self.server = "192.168.100.100"
-        self.server = "205.204.62.125"
+        self.server = "142.161.10.140"
         self.port = 25562
         self.addr = (self.server,self.port)
         self.data = []
@@ -47,7 +45,6 @@ class Network:
         for data in receive:
             if packet == data["packet"]:
                 receive.remove(data)
-                print(data)
                 return data
         return None
 
