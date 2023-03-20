@@ -148,8 +148,6 @@ class chat:
                         self.received = True
                         self.sent = False
                         for message in data["messages"]:
-                            if self.past_bottom:
-
                             if data["messages"][message]['message'][0] == "/":
                                 if data["messages"][message]['message'] == "/clear":
                                     print("clear")
