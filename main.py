@@ -103,6 +103,7 @@ setting = False
 in_game = False
 pychat = False
 reset_screen = False
+reload_players = False
 check_settings = False
 resolutions = ("2560x1440","1920x1440","1920x1200","1920x1080","1680x1050","1600x1200","1600x1024","1600x900","1440x900","1366x768","1360x768","1280x1024","1280x960","1280x800","1280x768","1280x720","1152x864","1024x768","800x600")
 data = None
@@ -207,6 +208,24 @@ if __name__ == "__main__":
             if pychat:
                 chat.reload()
             bg.reset()
+#reload all players
+        if reload_players:
+            reload_players = False
+            for each in Players:
+                each.save_player()
+            Players = []
+            numofplayers = 0
+            for each in os.listdir("playerdata"):
+                Players.append(Player_class())
+                Players[numofplayers].load_player(each)
+                numofplayers += 1
+            Players.sort(key=get_position)
+
+            for each in Players:
+                if each.position == 1:
+                    player = each
+            if chat != None:
+                chat.player = player
 
     #user input
         for event in pygame.event.get():
@@ -404,13 +423,7 @@ if __name__ == "__main__":
                         gui.box(theme,(0,0),(200,screen[1]/scale))
                         if gui.button(theme,(-25,(screen[1]/scale)/2-10),(150,20),"New Server",Input):
                             sub_screen.append("create_server")
-                            multiplayerGames = []
-                            try:
-                                with open("multiplayerGames.txt", "r") as MPGs:
-                                    for line in MPGs:
-                                        multiplayerGames.append(line.strip("\n"))
-                            except:
-                                popUp = gui.pop_up(theme,(0,-current_h/(2*scale)-25),(0,-current_h/(2*scale)+15),2,3,(300,15),"error 404: localGames.txt not found!")
+                            multiplayerGames = ["Dot Game","Snake","Connect 4","Flappy Bird"]
 
                         if gui.button(theme,(75,(screen[1]/scale)/2-10),(50,20),"Refresh",Input):
                             n.send({"packet": "get_servers"})
@@ -438,7 +451,12 @@ if __name__ == "__main__":
                             pos += 25
 
                     elif sub_screen[-1] == "Snake":
-                        game = multiplayer_games.Snake(theme, Input, Players)
+                        game = multiplayer_games.Snake(theme, Input, Players,n)
+                        in_game = True
+                        sub_screen.pop()
+
+                    elif sub_screen[-1] == "Dot Game":
+                        game = multiplayer_games.Dot_Game(theme, Input, Players,n)
                         in_game = True
                         sub_screen.pop()
 
@@ -503,7 +521,6 @@ if __name__ == "__main__":
                         config["target_fps"] = game_fps
                         sub_screen.pop()
 
-
                 elif main_screen[-1]  == "Edit":
                     gui.lable(theme, (0, -current_h / (2 * scale) + 75), "Player Editor", in_box=True, size=(150, 20))
                     if sub_screen[-1] == "main":
@@ -542,19 +559,11 @@ if __name__ == "__main__":
                         if gui.button(theme, (0, current_h / (2 * scale) - 40), (100, 20), "Apply", Input):
                             for each in Players:
                                 each.save_player()
+                            reload_players = True
                             sub_screen.pop()
-                        if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
-                            Players = []
-                            numofplayers = 0
-                            for each in os.listdir("playerdata"):
-                                Players.append(Player_class())
-                                Players[numofplayers].load_player(each)
-                                numofplayers += 1
-                            Players.sort(key=get_position)
 
-                            for each in Players:
-                                if each.position == 1:
-                                    player = each
+                        if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
+                            reload_players = True
                             sub_screen.pop()
 
                     elif sub_screen[-1] == "pick":
@@ -567,6 +576,7 @@ if __name__ == "__main__":
                                 current_player.position = old_spot
                                 player.position = new_spot
                                 Players.sort(key=get_position)
+                                reload_players = True
                                 sub_screen.pop()
                             pos += 25
                             i += 1
@@ -601,28 +611,25 @@ if __name__ == "__main__":
                             if gui.alert(theme, (0, 0), (300, 200), f"Are you sure you want to PERMANENTLY delete {current_player.name} forever! This will delete all player data!", "Yes", "No",Input, frame):
                                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25),(0, -current_h / (2 * scale) + 15), 2, 3, (300, 15),f"{current_player.name} has been deleted!")
                                 os.remove(f"playerdata/{current_player.name}.json")
-                                Players = []
-                                numofplayers = 0
-                                for each in os.listdir("playerdata"):
-                                    Players.append(Player_class())
-                                    Players[numofplayers].load_player(each)
-                                    numofplayers += 1
-                                Players.sort(key=get_position)
-
-                                for each in Players:
-                                    if each.position == 1:
-                                        player = each
+                                Players.pop(current_player)
+                                reload_players = True
                                 sub_screen.pop()
 
 
                         if gui.button(theme, (60, 75), (100, 20), "Clear Saved Data", Input):
                             if gui.alert(theme, (0, 0), (300, 200), f"Are you sure you want to PERMANENTLY delete {current_player.name}'s Save data forever! This will delete high scores and playtime!", "Yes", "No",Input, frame):
                                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25),(0, -current_h / (2 * scale) + 15), 2, 3, (300, 15),f"Clear {current_player.name}'s saved data!")
+                                current_player.highScores = {}
+                                current_player.currentGames = {}
+                                current_player.playTime = {}
+                                reload_players = True
+
 
 
                         if gui.button(theme, (0, current_h / (2 * scale) - 40), (100, 20), "Apply", Input):
                             current_player.name = name.text
                             current_player.save_player()
+                            reload_players = True
                             sub_screen.pop()
 
                         if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
@@ -640,12 +647,7 @@ if __name__ == "__main__":
 
                         if gui.button(theme, (57, screen[1] / scale / 2 - 10), (115, 20), "Save", Input):
                             new_player.save_player()
-                            Players = []
-                            numofplayers = 0
-                            for each in os.listdir("playerdata"):
-                                Players.append(Player_class())
-                                Players[numofplayers].load_player(each)
-                                numofplayers += 1
+                            reload_players = True
                             sub_screen.pop()
 
                         if gui.button(theme, (-57, screen[1] / scale / 2 - 10), (115, 20), "Cancel", Input):
@@ -661,25 +663,11 @@ if __name__ == "__main__":
                     if gui.button(theme, (0, -50), (100, 15), "connect to server", Input):
                         n.connect()
 
-                    if gui.button(theme, (0, -25), (100, 20), "create server", Input):
-                        n.send({"packet":"new_server"})
-
-                    if gui.button(theme, (0, 0), (100, 20), "get server ID", Input):
-                        data = n.receive("new_server")
-
-                    if data == None:
-                        server_ID = "unknown"
-                    else:
-                        server_ID = data["server"]["server_ID"]
-
-                    gui.lable(theme,(0,25),server_ID,in_box=True,size=(100,20))
-
-
                     if gui.button(theme, (0, 50), (100, 20), "get servers", Input):
                         n.send({"packet":"get_servers"})
 
                     if gui.button(theme, (0, 75), (100, 20), "print servers", Input):
-                        n.receive("servers")
+                        print(n.receive("servers"))
 
 
                     if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):

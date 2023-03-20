@@ -239,3 +239,210 @@ class Snake:
         if self.grid:
             self.draw_grid()
         self.score()
+
+
+class Dot_Game:
+    def __init__(self,theme,Input,Players,n):
+        self.display = theme.display
+        self.screen = theme.screen
+        self.theme = theme
+        self.Input = Input
+        self.Players = Players
+        self.scale = 50
+        self.tcolor = theme.tcolor
+        self.scaleSettings = gui.lable_text(self.theme,(60,0),(100,15),"Scale",self.scale)
+        self.half = self.scale/2
+        self.playagain = False
+        self.setup_ = False
+
+        self.players = []
+        self.dots = []
+        self.lines= []
+        self.moves = {}
+        self.colors = {}
+        self.scores = {}
+        self.squares = {}
+        self.turn = 0
+        self.X = 10
+        self.Y = 10
+
+        self.X_ui = gui.Text_Box(theme,(35,-100),(40,15),"X", default_text = "X")
+        self.Y_ui = gui.Text_Box(theme, (85, -100), (40, 15), "Y", default_text = "Y")
+
+        for each in Players:
+            self.players.append(each.name)
+            self.moves[each.name] = []
+            self.colors[each.name] = each.color1
+            self.scores[each.name] = 0
+            self.squares[each.name] = []
+
+        self.turn_ui = gui.multiple_choice_input(theme,(60,-75),(100,15),"",self.players[0],self.players,5)
+        self.num_of_players_ui = gui.multiple_choice_input(theme,(60,-50),(100,15),"Num of players?",len(self.players),range(len(self.players)+1)[1:],5)
+
+        self.bg = background.dots_background(self.display, self.screen[0] * 2, self.screen[1] * 2, 600)
+
+    def setup(self):
+        self.bg.update()
+        gui.lable(self.theme,(-60,-100),"Grid Size", in_box=True, size = (100,15))
+        self.X_ui.update(self.Input)
+        self.Y_ui.update(self.Input)
+
+        self.turn_ui.update(self.Input)
+        gui.lable(self.theme, (-60, -75), "Who goes first?", in_box=True, size=(100, 15))
+
+        self.num_of_players_ui.update(self.Input)
+
+        if gui.button(self.theme,(0,self.theme.screen[1]/self.theme.scale-40),(100,15),"Play!",self.Input):
+            if self.X_ui.get_text().isnumeric() and self.Y_ui.get_text().isnumeric():
+                self.X = int(self.X_ui.get_text())
+                self.Y = int(self.Y_ui.get_text())
+                self.offset = (self.screen[0] - self.X * self.half, self.screen[1] - self.Y * self.half)
+                self.turn = self.players.index(self.turn_ui.text)
+                self.num_of_players = int(self.num_of_players_ui.text)
+                self.setup_ = True
+
+        if gui.button(self.theme, (0, self.theme.screen[1]/self.theme.scale-15), (100, 15), "back", self.Input):
+            return True
+
+
+    def load(self):
+        self.players = []
+        self.dots = []
+        self.lines= []
+        self.moves = {}
+        self.colors = {}
+        self.scores = {}
+        self.squares = {}
+        self.setup_ = True
+        with open("saves/dotgame.json", "r") as old_game:
+            game = json.loads(old_game.read())
+
+        self.num_of_players = len(game["players"])
+        self.turn = game["turn"]
+        self.X,self.Y = game["size"]
+        self.offset = (self.screen[0]-self.X*self.half,self.screen[1]-self.Y*self.half)
+        offx,offy = self.offset
+
+        for player in game["players"]:
+            self.players.append(player)
+            self.scores[player] = game["players"][player]["score"]
+            color_list = game["players"][player]["color"]
+            r, g, b = color_list
+            self.colors[player] = (r, g, b)
+            self.moves[player] = []
+            for line in game["players"][player]["moves"]:
+                x,y = line
+                self.moves[player].append((x,y))
+                self.lines.append((x,y))
+            self.squares[player] = []
+            for squares in game["players"][player]["squares"]:
+                x,y = squares
+                self.squares[player].append((x,y))
+
+    def settings(self):
+        self.scaleSettings.update(self.Input)
+        if gui.button(self.theme, (0, 50), (100, 20), "Exit Game", self.Input):
+            return "exit"
+        if gui.button(self.theme, (0, 75), (100, 20), "Save and Exit", self.Input):
+            return "save exit"
+        if gui.button(self.theme, (0, 100), (100, 20), "Apply", self.Input):
+            if self.scaleSettings.text.isnumeric():
+                self.scale = int(self.scaleSettings.text)
+                self.half = self.scale/2
+                self.offset = (self.screen[0] - self.X * self.half, self.screen[1] - self.Y * self.half)
+                return "back"
+        return False
+
+    def Draw_Game(self):
+        self.display.fill((0, 0, 0))
+        gui.text(self.theme, (-self.screen[0]/self.theme.scale, self.screen[1]/self.theme.scale), f"{self.players[self.turn]}'s turn",center="bottom_left")
+        offx, offy = self.offset
+        _2 = self.scale/25
+        _4 = self.scale/12.5
+        _23 = self.half - self.scale/25
+        _46 = self.scale - self.scale/12.5
+        for player in self.players:
+            current_color = self.colors[player]
+            for line in self.moves[player]:
+                X,Y = line
+                x, y = X * self.half + offx, Y * self.half + offy
+                if X % 2 == 0:
+                    pygame.draw.rect(self.display, current_color, ((x - self.half, y - _2), (self.scale, _4))) # draw horizontally
+                if Y % 2 == 0:
+                    pygame.draw.rect(self.display, current_color, ((x - _2, y - self.half), (_4, self.scale))) # draw vertically
+            for square in self.squares[player]:
+                X, Y = square
+                x, y = X * self.half + offx, Y * self.half + offy
+                pygame.draw.rect(self.display, current_color, ((x - _23, y - _23), (_46, _46))) # draw Square down
+
+
+        for x in range(self.X):
+            x = x * self.scale + self.half
+            for y in range(self.Y):
+                y = y * self.scale + self.half
+                pygame.draw.circle(self.display, (128, 128, 128), (offx + x, offy + y), self.scale/10)
+
+    def update(self):
+        x, y, mb = self.Input.mouse()
+        if mb == 1:
+            offx, offy = self.offset
+            x, y = x - offx, y - offy
+            if  self.half/2  < x < self.X*self.scale - self.half/2  and self.half/2  < y < self.Y*self.scale - self.half/2 :
+                X = int(round(x /self.half))
+                Y = int(round(y / self.half))
+                x, y = X * self.half + offx, Y * self.half + offy
+                print(X, Y)
+                if X % 2 == 0 ^ Y % 2 == 0:
+                    print("invalid move")
+                else:
+                    print("valid move")
+                    playagain = False
+                    current_color = self.colors[self.players[self.turn]]
+                    if (X,Y) not in self.lines:
+                        self.lines.append((X,Y))
+                        self.moves[self.players[self.turn]].append((X,Y))
+
+                        print(x, y )
+
+                        if X % 2 == 0:
+                            print("X")
+                            if (X - 1, Y - 1) in self.lines and (X, Y - 2) in self.lines and (X + 1, Y - 1) in self.lines:
+                                self.squares[self.players[self.turn]].append((X,Y - 1))
+                                playagain = True
+
+                            if (X - 1, Y + 1) in self.lines and (X, Y + 2) in self.lines and (X + 1, Y + 1) in self.lines:
+                                self.squares[self.players[self.turn]].append((X, Y + 1))
+                                playagain = True
+
+                        if Y % 2 == 0:
+                            print("Y")
+                            if (X - 1, Y - 1) in self.lines and (X - 2, Y) in self.lines and (X - 1, Y + 1) in self.lines:
+                                self.squares[self.players[self.turn]].append((X - 1, Y))
+                                playagain = True
+
+                            if (X + 1, Y - 1) in self.lines and (X + 2, Y) in self.lines and (X + 1, Y + 1) in self.lines:
+                                self.squares[self.players[self.turn]].append((X + 1, Y))
+                                playagain = True
+
+                        if not playagain:
+                            self.turn += 1
+                            if self.turn == self.num_of_players:
+                                self.turn = 0
+        Dot_Game.Draw_Game(self)
+
+    def exit(self):
+        os.rename("saves/dotgame.json","saves/old saves/dotgame.json")
+
+    def save_exit(self):
+        game = {}
+        game["turn"] = self.turn
+        game["size"] = (self.X,self.Y)
+        game["players"] = {}
+        for player in self.players:
+            game["players"][player] = {}
+            game["players"][player]["score"] = self.scores[player]
+            game["players"][player]["color"] = self.colors[player]
+            game["players"][player]["moves"] = self.moves[player]
+            game["players"][player]["squares"] = self.squares[player]
+        with open("saves/dotgame.json", "w") as old_game:
+            old_game.write(json.dumps(game))

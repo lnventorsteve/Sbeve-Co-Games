@@ -148,27 +148,26 @@ def client(conn,addr):
                     reply = json.dumps({"packet": "PyChat_servers", "servers": PyChat_servers})
 
                 elif data["packet"] == "join_PyChat":
+                    reply = json.dumps({"packet": "join_PyChat", "server": "bad password"})
                     for server in servers:
                         if server["name"] == data["name"] and server["password"] == data["password"]:
                             reply = json.dumps({"packet": "join_PyChat", "server": server})
-                        else:
-                            reply = json.dumps({"packet": "join_PyChat","server": "bad password"})
+                            break
+
 
                 elif data["packet"] == "send_message":
                     reply = "null"
                     if data["message"] != "":
                         if data["message"][0] == "/":
                             if data["message"] == "/clear":
-                                servers[data["ID"]]["messages"] = []
+                                servers[data["ID"]]["messages"] = {}
                                 add_message(data)
                             else:
-                                name = "Server"
-                                new_message = f"{data['message'][1:]} is an unknown command use /help to see all commands"
                                 now = datetime.now()
                                 current_time = now.strftime("%I:%M:%S:%f:%p")
-                                messages[current_time] = {}
-                                messages[current_time]["message"] = new_message
-                                messages[current_time]["player"] = name
+                                servers[data["ID"]]["messages"][current_time] = {}
+                                servers[data["ID"]]["messages"][current_time]["message"] = f"{data['message'][1:]} is an unknown command use /help to see all commands"
+                                servers[data["ID"]]["messages"][current_time]["player"] = "Server"
                                 servers[data["ID"]]["message_list"].append(current_time)
                         else:
                             add_message(data)
