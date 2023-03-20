@@ -161,7 +161,9 @@ class chat:
 
             pos = sy - 15
             self.past_bottom = False
-            for time_stamp in self.message_list[self.pointer:]:
+            _len = len(self.message_list[self.pointer:])
+            for time_stamp in self.message_list[_len]:
+                _len -= 1
                 message = self.messages[time_stamp]["message"]
                 if self.theme.font.size(message)[0] > sx*self.scale-10:
                     line = ""

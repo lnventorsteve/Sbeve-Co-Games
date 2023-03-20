@@ -23,7 +23,6 @@ class dots_background:
         self.turn = 0
         self.playagain  = False
         self.length = time.perf_counter() + length
-        self.alpha = 0
         self.players = ["p1","p2","p3","p4","p5","p6"]
         self.colors = {"p1":(132, 204, 106),"p2":(86, 167, 191),"p3":(151, 104, 173),"p4":(247, 237, 141),"p5":(110, 97, 69),"p6":(77, 21, 37)}
         self.moves = {"p1":[],"p2":[],"p3":[],"p4":[],"p5":[],"p6":[]}
@@ -41,16 +40,7 @@ class dots_background:
     def update(self):
         self.display.set_alpha(self.alpha)
         if time.perf_counter() > self.length:
-            self.alpha -= 3
-            if self.alpha < 0:
-                self.alpha = 0
-                self.display.fill((0, 0, 0))
-                return Snake_background(self.display,self.current_w,self.current_h, random.randrange(30, 300))
-        else:
-            if self.alpha < 255:
-                self.alpha += 3
-                if self.alpha > 255:
-                    self.alpha = 255
+            return Snake_background(self.display,self.current_w,self.current_h, random.randrange(30, 300))
         if time.perf_counter() > self.speed:
             self.speed = time.perf_counter() + 0.05
             width = int(self.current_w / 25)+2
@@ -150,7 +140,6 @@ class Snake_background:
         self.current_h = current_h
         self.display = display
         self.length = time.perf_counter() + length
-        self.alpha = 0
         self.difficulty = time.perf_counter()
         self.last_direction = 0
         x,y = int(current_w/64),int(current_h/64)
@@ -184,16 +173,7 @@ class Snake_background:
     def update(self):
         scale = 32
         if time.perf_counter() > self.length:
-            self.alpha -= 3
-            if self.alpha < 0:
-                self.alpha = 0
-                return dots_background(self.display,self.current_w,self.current_h,random.randrange(30, 300))
-        else:
-            if self.alpha < 255:
-                self.alpha += 3
-                if self.alpha > 255:
-                    self.alpha = 255
-
+            return dots_background(self.display,self.current_w,self.current_h,random.randrange(30, 300))
         snake_num = 0
         all_snakes = []
         for snake in self.snakes:

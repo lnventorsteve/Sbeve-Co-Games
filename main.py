@@ -285,9 +285,9 @@ if __name__ == "__main__":
 
             if not in_game:
                 if pychat:
-                    if not connected:
-                        connected = n.connect()
-                        if not connected:
+                    if not n.is_connected():
+                        n.connect()
+                        if not n.is_connected():
                             pychat = False
                             popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25* scale), (0, -current_h / (2 * scale) + 15), 2, 3, (300, 15), "Failed to connect to server")
                     else:
@@ -316,9 +316,9 @@ if __name__ == "__main__":
                             main_screen.append("random")
 
                         if gui.button(theme, (0, 0), (100, 20), "Multiplayer", Input):
-                            if not connected:
-                                connected = n.connect()
-                            if connected:
+                            if not n.is_connected():
+                                n.connect()
+                            if n.is_connected():
                                 main_screen.append("multiplayer")
                                 servers = []
                             else:
