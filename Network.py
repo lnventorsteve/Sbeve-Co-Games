@@ -16,7 +16,7 @@ class Network:
         global send
         global receive
         global connected
-        send = []
+        send = ""
         receive = []
         self.start = 0
         connected = False
@@ -25,7 +25,7 @@ class Network:
         global connected
         try:
             self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client.settimeout(1)
+            #self.client.settimeout(1)
             self.client.connect(self.addr)
             start_new_thread(client, (self.client, self.addr))
             connected = True
@@ -37,8 +37,7 @@ class Network:
 
     def send(self,data):
         global send
-        send.append(json.dumps(data))
-        print(send)
+        send+=json.dumps(data)+"&"
 
     def receive(self,packet):
         global receive
@@ -58,13 +57,21 @@ def client(conn,addr):
     global connected
     while True:
         try:
-            for data in  send:
-                conn.send(str.encode(str(data)))
-                send.remove(data)
-                packet = json.loads(conn.recv(2048).decode("utf-8"))
-                if packet != None:
-                    receive.append(packet)
+            if send != "":
+                if len(send.encode('utf-8')) > 2048:
+                    print("packet to big")
+                start = time.perf_counter()
+                conn.send(str.encode(send))
+                send = ""
+                packets = conn.recv(2048).decode("utf-8")
+                if packets != None:
+                    packets = packets.split("&")
+                    for packet in packets:
+                        if packet != "" and packet != "null":
+                            receive.append(json.loads(packet))
+                print(f"packet took {time.perf_counter() - start} to send and receive" )
         except Exception as e:
+            print(e)
             print(f"{addr} lost conncection at {datetime.now().strftime('%I:%M:%S%p')}")
             connected = False
             break

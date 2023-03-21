@@ -1497,7 +1497,7 @@ def button_list(theme,pos,size,options,max,Input):
 
 
 class window:
-    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(0,0), max=(0,0)):
+    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=False, max=False):
         self.theme = theme
         self.display = theme.display
         self.screen = theme.screen
@@ -1507,8 +1507,14 @@ class window:
         self.size = size
         self.name = name
         self.resizeable =resizeable
-        self.min = min
-        self.max = max
+        if min == False:
+            self.min = (0,0)
+        else:
+            self.min = min
+        if max == False:
+            self.max = self.screen
+        else:
+            self.max = max
         self.resizing = False
         self.smx = 0
         self.smy = 0
@@ -1522,6 +1528,7 @@ class window:
         size_x, size_y = self.size
         x2, y2 = size_x * self.scale, size_y * self.scale
         mx, my, mb = self.Input.mouse()
+        old_x,old_y = self.pos
 
         if self.resizeable:
             if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
@@ -1648,11 +1655,18 @@ class window:
             if mb == 0 and self.resizing:
                 self.resizing = False
             self.smx, self.smy = mx, my
-
-            if self.min[0] > self.size[0]: self.size = (self.min[0],self.size[1])
-            if self.max[0] < self.size[0]: self.size = (self.max[0], self.size[1])
-            if self.min[1] > self.size[1]: self.size = (self.size[0],self.min[1])
-            if self.max[1] < self.size[1]: self.size = (self.size[0], self.max[1])
+            if self.min[0] > self.size[0]:
+                self.size = (self.min[0],self.size[1])
+                self.pos = (old_x,self.pos[1])
+            if self.max[0] < self.size[0]:
+                self.size = (self.max[0], self.size[1])
+                self.pos = (old_x, self.pos[1])
+            if self.min[1] > self.size[1]:
+                self.size = (self.size[0],self.min[1])
+                self.pos = (self.pos[0],old_y )
+            if self.max[1] < self.size[1]:
+                self.size = (self.size[0], self.max[1])
+                self.pos = (self.pos[0], old_y)
 
 
 

@@ -38,7 +38,6 @@ class dots_background:
                 pygame.draw.circle(self.display,(128,128,128),(x+5, y-5), 5)
 
     def update(self):
-        self.display.set_alpha(self.alpha)
         if time.perf_counter() > self.length:
             return Snake_background(self.display,self.current_w,self.current_h, random.randrange(30, 300))
         if time.perf_counter() > self.speed:
@@ -122,7 +121,6 @@ class dots_background:
     def reset(self):
         self.display.fill((0,0,0))
         self.lines = []
-        self.alpha = 0
         self.length = time.perf_counter()+60
         width = int(self.current_w / 25)+2
         height = int(self.current_h / 25)+2
@@ -358,5 +356,4 @@ class Snake_background:
 
     def reset(self):
         self.display.fill((0,0,0))
-        self.alpha = 0
         self.length = time.perf_counter()+60

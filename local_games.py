@@ -456,8 +456,6 @@ class Snake:
             if (each[0] , each[1]  -1) in check:
                 pygame.draw.line(self.display, self.snake_color, (self.screenx + sx+1,self.screeny + sy),(self.screenx + sx+self.snake_scale-1,self.screeny + sy))
 
-
-
     def draw_tail(self):
         tx, ty = self.snake[0]
         bx, by = self.snake[1]

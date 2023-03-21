@@ -27,6 +27,7 @@ class Snake:
         self.debug = False
         self.dead = False
         self.setup_ = False
+        self.join_ = False
         self.Players = Players
         self.player = self.Players[0]
         self.n = n
@@ -47,6 +48,7 @@ class Snake:
         self.last_frame = time.perf_counter() + 0.5
         self.next_frame = time.perf_counter()
         self.server_ID = None
+        self.clients = {}
         self.snakes = []
 
 
@@ -102,13 +104,10 @@ class Snake:
         data = self.n.receive("new_server")
         if data != None:
             self.server_ID = data["server"]["ID"]
-            self.n.send({"packet": "add_data","server":self.server_ID,"key":"type","data":"game"})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Name", "data": "Snake"})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "max_players", "data": gui.get_text(self.maxplayers_gui)})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "grid", "data": self.grid})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "grid_state", "data": self.grid_state})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "difficulty", "data": self.d_text})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "snakes", "data": {}})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "server_info", "data": {"Host":self.player.name,"Type":"game","Name":"Snake","Max players":gui.get_text(self.maxplayers_gui),"Grid":(self.gx+1, self.gy+1),"Difficulty":self.d_text}})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Snakes", "data": {}})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Apples", "data": []})
+            self.n.send({"packet": "join_server", "server": self.server_ID,"name":self.player.name})
             self.setup_ = True
 
             if f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1}" not in self.player.highScores["snake"]:
@@ -121,23 +120,59 @@ class Snake:
             self.input_direction = "left"
             self.inputs = ["left"]
             self.last_direction = "left"
+            self.direction = "left"
             self.snake = self.my_snake
             self.make_apple()
+            self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.direction,"body":self.player.color1,"eyes":self.player.color2}}
 
         if gui.button(self.theme, (0, self.theme.screen[1] / self.theme.scale - 15), (100, 20), "back", self.Input):
             return True
 
-    def make_apple(self):
-        timeout = time.perf_counter() + 0.08
-        ax = random.randrange(0, self.gx+1)
-        ay = random.randrange(0, self.gy+1)
-        while (ax, ay) in self.snake:
-            ax = random.randrange(0, self.gx+1)
-            ay = random.randrange(0, self.gy+1)
-            if time.perf_counter() > timeout:
-                self.apple = (-1,-1)
-                break
-        self.apple = (ax,ay)
+    def join(self):
+        gui.lable(self.theme,(0,0),"Getting Server Info")
+        data = self.n.receive("server_info")
+        if data != None:
+            data = data["data"]
+            x,y = data["Grid"]
+            self.grid_size = (x - 1, y - 1)
+            self.grid = self.grid_size
+            self.gx, self.gy = self.grid_size
+
+            self.d_text = data["Difficulty"]
+            if self.d_text == "Easy++":
+                d_value = 2
+            elif self.d_text == "Easy+":
+                d_value = 1
+            elif self.d_text == "Easy":
+                d_value = 0.5
+            elif self.d_text == "Normal":
+                d_value = 0.25
+            elif self.d_text == "Hard":
+                d_value = 0.1
+            elif self.d_text == "Expert":
+                d_value = 0.05
+            elif self.d_text == "God":
+                d_value = 0.01
+            self.difficulty = d_value
+
+            if f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1}" not in self.player.highScores["snake"]:
+                self.player.highScores["snake"][
+                    f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1} on {self.d_text}"] = 0
+
+            self.snake_scale = 32
+            self.apple_scale = self.snake_scale / 32
+            self.screenx = self.screen[0] - (self.gx + 1) / 2 * self.snake_scale
+            self.screeny = self.screen[1] - (self.gy + 1) / 2 * self.snake_scale
+            self.my_snake = [(0, int(self.gy / 2)), (0, int(self.gy / 2)), (1, int(self.gy / 2))]
+            self.input_direction = "left"
+            self.inputs = ["left"]
+            self.last_direction = "left"
+            self.direction = "left"
+            self.snake = self.my_snake
+            self.make_apple()
+            self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.direction,"body":self.player.color1,"eyes":self.player.color2}}
+            self.join_ = False
+
 
     def draw_snake(self):
         for each in self.snake[1:-1]:
@@ -210,8 +245,35 @@ class Snake:
         rex = rex + sx
         rey = rey + sy
         pygame.draw.circle(self.display, self.snake_color, (self.screenx + (self.snake_scale/2) + sx, self.screeny + (self.snake_scale/2) + sy), (self.snake_scale/2)-1)
-        pygame.draw.circle(self.display, self.eyes, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
-        pygame.draw.circle(self.display, self.eyes, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
+        pygame.draw.circle(self.display, self.player.color2, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
+        pygame.draw.circle(self.display, self.player.color2, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
+
+    def move_snake(self):
+        self.old_snake = self.snake[0]
+        hx, hy = self.snake[-1]
+        if self.direction == "up":
+            hy -= 1
+        if self.direction == "down":
+            hy += 1
+        if self.direction == "left":
+            hx += 1
+        if self.direction == "right":
+            hx -= 1
+
+        self.snake.append((hx, hy))
+        self.snake.pop(0)
+
+    def make_apple(self):
+        timeout = time.perf_counter() + 0.08
+        ax = random.randrange(0, self.gx+1)
+        ay = random.randrange(0, self.gy+1)
+        while (ax, ay) in self.snake:
+            ax = random.randrange(0, self.gx+1)
+            ay = random.randrange(0, self.gy+1)
+            if time.perf_counter() > timeout:
+                self.apple = (-1,-1)
+                break
+        self.apple = (ax,ay)
 
     def draw_apple(self):
         ax, ay = self.apple
@@ -246,30 +308,62 @@ class Snake:
                              self.screenx + (self.gx + 1) * self.snake_scale,
                              self.screeny + y * self.snake_scale + self.snake_scale))
 
+    def move_snake(self):
+        self.old_snake = self.my_snake[0]
+        hx, hy = self.my_snake[-1]
+        if self.direction == "up":
+            hy -= 1
+        if self.direction == "down":
+            hy += 1
+        if self.direction == "left":
+            hx += 1
+        if self.direction == "right":
+            hx -= 1
+
+        self.my_snake.append((hx, hy))
+        self.my_snake.pop(0)
+
     def update(self):
+        for key in self.Input.keys:
+            if key == 119 and self.last_direction != "down" or key == 1073741906 and self.last_direction != "down":
+                self.input_direction = "up"
+            elif key == 97 and self.last_direction != "left" or key == 1073741904 and self.last_direction != "left":
+                self.input_direction = "right"
+            elif key == 115 and self.last_direction != "up" or key == 1073741905 and self.last_direction != "up":
+                self.input_direction = "down"
+            elif key == 100 and self.last_direction != "right" or key == 1073741903 and self.last_direction != "right":
+                self.input_direction = "left"
+
+            if self.input_direction != self.last_direction:
+                self.last_direction = self.input_direction
+                self.inputs.append(self.input_direction)
+
+
         if time.perf_counter() >= self.next_frame:
             self.next_frame = time.perf_counter() + self.difficulty
-            self.n.send({"packet": "get_data", "server": self.server_ID, "key": "snakes"})
-            self.n.send({"packet": "add_data_to_dict", "server": self.server_ID, "key": "snakes", "key2": self.player.name,"data": self.my_snake})
-        data = self.n.receive("get_data")
+            if len(self.inputs) > 1:
+                self.inputs.pop(0)
+            self.direction = self.inputs[0]
+            self.move_snake()
+            self.n.send(
+                {"packet": "snake_data", "server": self.server_ID, "name": self.player.name, "snake": self.my_snake,
+                 "direction": self.direction, "body": self.player.color1, "eyes": self.player.color2})
+        data = self.n.receive("snake_data")
         if data != None:
-            print(data)
             self.snakes = data["data"]
 
         self.draw_apple()
-        for snake in self.snakes:
+        for name in self.snakes:
+            snake = self.snakes[name]
             self.snake = snake["snake"]
-            dir = snake["dir"]
+            self.direction = snake["direction"]
             self.snake_color = snake["body"]
             self.eyes = snake["eyes"]
-            self.draw_snake()
-            self.draw_tail()
-            self.draw_head()
-
-        if self.grid:
             self.draw_grid()
-        self.score()
-
+            self.draw_snake()
+            self.draw_head()
+            self.draw_tail()
+            self.score()
 
 
 class Dot_Game:

@@ -423,7 +423,7 @@ if __name__ == "__main__":
                         gui.box(theme,(0,0),(200,screen[1]/scale))
                         if gui.button(theme,(-25,(screen[1]/scale)/2-10),(150,20),"New Server",Input):
                             sub_screen.append("create_server")
-                            multiplayerGames = ["Dot Game","Snake","Connect 4","Flappy Bird"]
+                            multiplayerGames = ["Snake"] # ["Dot Game","Snake","Connect 4","Flappy Bird"]
 
                         if gui.button(theme,(75,(screen[1]/scale)/2-10),(50,20),"Refresh",Input):
                             n.send({"packet": "get_servers"})
@@ -435,9 +435,37 @@ if __name__ == "__main__":
 
                         pos = 15 - (screen[1] / scale) / 2
                         for each in servers:
-                            if gui.button(theme, (0,pos), (100,20), str(each), Input):
-                                pass
+                            if gui.button(theme, (0,pos), (100,20), str(each["name"]), Input):
+                                sub_screen.append("join_server")
+                                properties_window = gui.window(theme,(0,0),(240, screen[1] / scale),"Properties",Input,resizeable=True,min = (240,40))
+                                n.send({"packet": "get_server_info","server":each["ID"]})
+                                server_ID = each["ID"]
+                                server = {}
                             pos += 25
+
+                    elif sub_screen[-1] == "join_server":
+                        x,y,sx,sy,button = properties_window.update()
+                        data = n.receive("server_info")
+                        if data != None:
+                            server = data["server_info"]
+                        pos = y - sy/2 + 30
+                        for each in server:
+                            gui.lable(theme, (x-60, pos), str(each),in_box=True, size = (100, 20))
+                            gui.lable(theme, (x+60, pos), str(server[each]), in_box=True, size=(100, 20))
+                            pos += 25
+                            if pos > y+sy/2-20:
+                                break
+                        if gui.button(theme, (x,y+sy/2-10 ), (sx, 20), "join", Input):
+                            n.send({"packet": "join_server", "server": server_ID ,"name":player.name})
+                        data = n.receive("join_server")
+                        if data != None:
+                            clients = data["clients"]
+                            sub_screen[-1] = f"join_{server['Name']}"
+
+
+
+                        if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input) or button != None:
+                            sub_screen.pop()
 
                     elif sub_screen[-1] == "create_server":
                         gui.lable(theme, (0, -current_h / (2 * scale) + 50), "New Server", in_box=True, size=(150, 20))
@@ -449,6 +477,17 @@ if __name__ == "__main__":
                             if gui.button(theme, (0, pos), (100, 20), game, Input):
                                 sub_screen.append(game)
                             pos += 25
+
+                    elif sub_screen[-1] == "join_Snake":
+                        game = multiplayer_games.Snake(theme, Input, Players,n)
+                        game.setup_ = True
+                        game.join_ = True
+                        game.clients = clients
+                        game.server_ID = server_ID
+                        n.send({"packet": "get_data", "server": server_ID, "key": "server_info"})
+                        in_game = True
+                        sub_screen.pop()
+                        sub_screen.pop()
 
                     elif sub_screen[-1] == "Snake":
                         game = multiplayer_games.Snake(theme, Input, Players,n)
@@ -696,6 +735,8 @@ if __name__ == "__main__":
                         if game.setup():
                             sub_screen.pop()
                             in_game = False
+                    elif game.join_:
+                        game.join()
                     else:
                         button = game.update()
                         if button == "settings":
