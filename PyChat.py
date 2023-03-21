@@ -130,7 +130,7 @@ class chat:
             self.size = (sx, sy)
             self.pychat_input.pos = (x-15,y+sy/2-7.5)
             self.pychat_input.size = (sx-30, 15)
-            self.pointer -= Input.scroll()
+            self.pointer += Input.scroll()
             if self.pointer < 0:
                 self.pointer = 0
             if self.pointer > len(self.message_list):
@@ -159,37 +159,36 @@ class chat:
                                 self.messages[message] = data["messages"][message]
                                 self.message_list.append(message)
 
-            pos = sy - 15
+            pos = 15
             self.past_bottom = False
-            _len = len(self.message_list[self.pointer:])
-            for time_stamp in self.message_list[_len]:
-                _len -= 1
+            for time_stamp in self.message_list[self.pointer:]:
+                self.theme.fonts(font_size = 8)
+                time_stamp_list = str(time_stamp).split(":")
+                time_ = f"{time_stamp_list[0]}:{time_stamp_list[1]} {time_stamp_list[-1]}"
+                pos += 4
+                gui.lable(self.theme, (x-sx/2 + 2, y + pos-sy/2),str(self.messages[time_stamp]["player"]) + " at " + time_, center="top_left")
+                pos += 8
+                self.theme.fonts(font_size = 12)
                 message = self.messages[time_stamp]["message"]
                 if self.theme.font.size(message)[0] > sx*self.scale-10:
                     line = ""
                     for each in message.split(" "):
                         if self.theme.font.size(line + each + " ")[0] > sx*self.scale-10:
-                            pos -= 13
                             gui.lable(self.theme, (x-sx/2 + 2, y + pos-sy/2), line, center="top_left")
+                            pos += 13
                             line = ""
                             line += each + " "
                         else:
                             line += each + " "
-                            pos -= 13
                     gui.lable(self.theme, (x - sx / 2 + 2, y + pos - sy / 2), line, center="top_left")
+                    pos += 13
                 else:
-                    pos -= 13
                     gui.lable(self.theme, (x-sx/2 + 2, y + pos-sy/2),self.messages[time_stamp]["message"], center="top_left")
+                    pos += 13
 
-                self.theme.fonts(font_size = 8)
-                time_stamp_list = str(time_stamp).split(":")
-                time_ = f"{time_stamp_list[0]}:{time_stamp_list[1]} {time_stamp_list[-1]}"
-                pos -= 13
-                gui.lable(self.theme, (x-sx/2 + 2, y + pos-sy/2),str(self.messages[time_stamp]["player"]) + " at " + time_, center="top_left")
-                pos -= 8
-                self.theme.fonts(font_size = 12)
 
-                if pos < self.theme.font.size("Qq")[1]:
+
+                if pos > sy-self.theme.font.size("Qq")[1]:
                     self.past_bottom = True
                     break
 

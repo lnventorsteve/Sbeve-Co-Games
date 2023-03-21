@@ -72,10 +72,9 @@ def client(conn,addr):
             else:
                 data = json.loads(data)
 # ping server
-
+                print(data)
                 if data["packet"] == "ping":
                     reply = '{"packet":"ping"}'
-
 # server management
 
 # join a game server
@@ -95,7 +94,7 @@ def client(conn,addr):
                     server_ID = 0
                     while server_ID in server_IDs:
                         server_ID += 1
-                    server = {"server_ID":server_ID}
+                    server = {"ID":server_ID}
                     servers.append(server)
                     reply = json.dumps({"packet":"new_server","server":server})
 
@@ -105,8 +104,10 @@ def client(conn,addr):
 
 # server data
                 elif data["packet"] == "add_data":
-                    servers[data["server"]] = data["key"]
                     servers[data["server"]][data["key"]] = data["data"]
+                elif data["packet"] == "add_data_to_dict":
+                    servers[data["server"]][data["key"]][data["key2"]] = data["data"]
+                    print(servers[data["server"]][data["key"]])
                 elif data["packet"] == "append_data":
                     temp = servers[data["server"]][data["key"]]
                     temp.append(data["data"])
@@ -117,6 +118,9 @@ def client(conn,addr):
                     temp = servers[data["server"]][data["key"]]
                     temp.pop()
                     servers[data["server"]][data["key"]] = temp
+
+                elif data["packet"] == "get_data":
+                    reply = json.dumps({"packet": "get_data", "data": servers[data["server"]][data["key"]]})
 
 
 # PyChat

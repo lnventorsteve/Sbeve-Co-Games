@@ -38,6 +38,7 @@ class Network:
     def send(self,data):
         global send
         send.append(json.dumps(data))
+        print(send)
 
     def receive(self,packet):
         global receive

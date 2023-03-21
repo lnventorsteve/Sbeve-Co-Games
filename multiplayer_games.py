@@ -46,14 +46,16 @@ class Snake:
         self.s = time.perf_counter() - 1
         self.last_frame = time.perf_counter() + 0.5
         self.next_frame = time.perf_counter()
+        self.server_ID = None
+        self.snakes = []
 
 
-        self.maxplayers = gui.lable_text(self.theme, (0, -100), (100, 20), "Max Players", 4)
-        self.scaleSettings = gui.lable_text(self.theme, (0, -75), (100, 20), "Scale", self.snake_scale)
+        self.maxplayers_gui = gui.lable_text(self.theme, (0, -100), (100, 20), "Max Players", 4)
+        self.scaleSettings_gui = gui.lable_text(self.theme, (0, -75), (100, 20), "Scale", self.snake_scale)
         self.difficulty_gui = gui.multiple_choice_input(self.theme,(0,-25),(100,20),"Difficulty","Normal",["Easy++","Easy+","Easy","Normal","Hard","Expert","God"],5,pointer=1)
-        self.width = gui.Text_Box(self.theme,(-25,-50),(47.5,20),"Width",default_text="Width")
-        self.height = gui.Text_Box(self.theme,(25,-50),(47.5,20),"Height",default_text="Height")
-        self.grid = gui.multiple_choice_input(self.theme,(0,0),(100,20),"Grid","On",["On","Off"],2)
+        self.width_gui = gui.Text_Box(self.theme,(-25,-50),(47.5,20),"Width",default_text="Width")
+        self.height_gui = gui.Text_Box(self.theme,(25,-50),(47.5,20),"Height",default_text="Height")
+        self.grid_gui = gui.multiple_choice_input(self.theme,(0,0),(100,20),"Grid","On",["On","Off"],2)
 
 
         self.bg = background.Snake_background(self.display,self.screen[0]*2,self.screen[1]*2,600)
@@ -63,19 +65,19 @@ class Snake:
         gui.lable(self.theme, (0, -self.screen[1] / self.scale + 75), "Snake", in_box=True, size=(150, 20))
         self.difficulty_gui.update(self.Input)
         gui.text(self.theme, (-120, -50), "Grid Size", in_box=True, size=(100, 20))
-        self.maxplayers.update(self.Input)
-        self.scaleSettings.update(self.Input)
-        self.width.update(self.Input)
-        self.height.update(self.Input)
-        self.grid.update(self.Input)
+        self.maxplayers_gui.update(self.Input)
+        self.scaleSettings_gui.update(self.Input)
+        self.width_gui.update(self.Input)
+        self.height_gui.update(self.Input)
+        self.grid_gui.update(self.Input)
         if gui.button(self.theme, (0, 50), (100, 20), "Play", self.Input):
-            if gui.get_text(self.width).isnumeric() and gui.get_text(self.height).isnumeric() and gui.get_text(self.scaleSettings).isnumeric():
-                self.grid_size = (int(gui.get_text(self.width))-1, int(gui.get_text(self.height))-1)
-                if self.grid.text == "On":
+            if gui.get_text(self.width_gui).isnumeric() and gui.get_text(self.height_gui).isnumeric() and gui.get_text(self.scaleSettings_gui).isnumeric() and gui.get_text(self.maxplayers_gui).isnumeric():
+                self.grid_size = (int(gui.get_text(self.width_gui))-1, int(gui.get_text(self.height_gui))-1)
+                if self.grid_gui.text == "On":
                     self.grid_state = True
                 else:
                     self.grid_state = False
-                self.snake_scale = int(gui.get_text(self.scaleSettings))
+                self.snake_scale = int(gui.get_text(self.scaleSettings_gui))
                 self.apple_scale = self.snake_scale/32
                 self.d_text = gui.get_text(self.difficulty_gui)
                 if self.d_text == "Easy++":
@@ -93,23 +95,49 @@ class Snake:
                 elif self.d_text == "God":
                     d_value = 0.01
                 self.difficulty = d_value
-                self.setup_ = True
                 self.gx, self.gy = self.grid_size
                 self.grid = self.grid_size
+                self.n.send({"packet": "new_server"})
 
-                if f"{self.grid_size[0]+1} by {self.grid_size[1]+1}" not in self.player.highScores["snake"]:
-                    self.player.highScores["snake"][f"{self.grid_size[0]+1} by {self.grid_size[1]+1} on {self.d_text}"] = 0
+        data = self.n.receive("new_server")
+        if data != None:
+            self.server_ID = data["server"]["ID"]
+            self.n.send({"packet": "add_data","server":self.server_ID,"key":"type","data":"game"})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Name", "data": "Snake"})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "max_players", "data": gui.get_text(self.maxplayers_gui)})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "grid", "data": self.grid})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "grid_state", "data": self.grid_state})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "difficulty", "data": self.d_text})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "snakes", "data": {}})
+            self.setup_ = True
 
-                self.screenx = self.screen[0] - (self.gx+1)/2*self.snake_scale
-                self.screeny = self.screen[1] - (self.gy+1)/2*self.snake_scale
-                self.snake = [(0, int(self.gy / 2)), (0, int(self.gy / 2)), (1, int(self.gy / 2))]
-                self.input_direction = "left"
-                self.inputs = ["left"]
-                self.last_direction = "left"
-                self.make_apple()
+            if f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1}" not in self.player.highScores["snake"]:
+                self.player.highScores["snake"][
+                    f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1} on {self.d_text}"] = 0
+
+            self.screenx = self.screen[0] - (self.gx + 1) / 2 * self.snake_scale
+            self.screeny = self.screen[1] - (self.gy + 1) / 2 * self.snake_scale
+            self.my_snake = [(0, int(self.gy / 2)), (0, int(self.gy / 2)), (1, int(self.gy / 2))]
+            self.input_direction = "left"
+            self.inputs = ["left"]
+            self.last_direction = "left"
+            self.snake = self.my_snake
+            self.make_apple()
 
         if gui.button(self.theme, (0, self.theme.screen[1] / self.theme.scale - 15), (100, 20), "back", self.Input):
             return True
+
+    def make_apple(self):
+        timeout = time.perf_counter() + 0.08
+        ax = random.randrange(0, self.gx+1)
+        ay = random.randrange(0, self.gy+1)
+        while (ax, ay) in self.snake:
+            ax = random.randrange(0, self.gx+1)
+            ay = random.randrange(0, self.gy+1)
+            if time.perf_counter() > timeout:
+                self.apple = (-1,-1)
+                break
+        self.apple = (ax,ay)
 
     def draw_snake(self):
         for each in self.snake[1:-1]:
@@ -219,12 +247,14 @@ class Snake:
                              self.screeny + y * self.snake_scale + self.snake_scale))
 
     def update(self):
-        self.n.send({"packet":"player_input","Server":self.server,"mosue":self.Input.mouse_info,"Keys":self.Input.Keys_pressed})
-        data = self.n.receive("game_info")
+        if time.perf_counter() >= self.next_frame:
+            self.next_frame = time.perf_counter() + self.difficulty
+            self.n.send({"packet": "get_data", "server": self.server_ID, "key": "snakes"})
+            self.n.send({"packet": "add_data_to_dict", "server": self.server_ID, "key": "snakes", "key2": self.player.name,"data": self.my_snake})
+        data = self.n.receive("get_data")
         if data != None:
-            self.data = data
-            self.apple = data["apple"]
-            self.snakes = data["snakes"]
+            print(data)
+            self.snakes = data["data"]
 
         self.draw_apple()
         for snake in self.snakes:
@@ -239,6 +269,7 @@ class Snake:
         if self.grid:
             self.draw_grid()
         self.score()
+
 
 
 class Dot_Game:
