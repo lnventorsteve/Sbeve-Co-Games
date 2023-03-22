@@ -98,8 +98,7 @@ def client(conn,addr,client_ID):
                     elif data["packet"] == "leave_server":
                         name = servers[data["server"]]["server_info"]["Name"]
                         if name == "Snake":
-                            leave_snake(client_ID,servers[data["server"]])
-
+                            leave_snake(client_ID,data["server"])
                         reply += json.dumps({"packet":"leave_server"}) + "&"
 
 # create new server
@@ -166,9 +165,10 @@ def client(conn,addr,client_ID):
                             server_ID += 1
                         server = {}
                         server["ID"] = server_ID
-                        server["name"] = data["name"]
+                        server["server_info"] = {}
+                        server["server_info"]["Name"] = data["name"]
+                        server["server_info"]["Type"] =  "PyChat"
                         server["password"] = data["password"]
-                        server["type"] =  "PyChat"
                         server["message_list"] = []
                         server["messages"] = {}
                         servers.append(server)
@@ -179,14 +179,14 @@ def client(conn,addr,client_ID):
                     elif data["packet"] == "get_PyChats":
                         PyChat_servers = []
                         for server in servers:
-                            if server["type"] == "PyChat":
-                                PyChat_servers.append(server["name"])
+                            if server["server_info"]["Type"] == "PyChat":
+                                PyChat_servers.append(server["server_info"]["Name"])
                         reply += json.dumps({"packet": "PyChat_servers", "servers": PyChat_servers}) + "&"
 
                     elif data["packet"] == "join_PyChat":
                         reply = json.dumps({"packet": "join_PyChat", "server": "bad password"})
                         for server in servers:
-                            if server["name"] == data["name"] and server["password"] == data["password"]:
+                            if server["server_info"]["Name"] == data["name"] and server["password"] == data["password"]:
                                 reply = json.dumps({"packet": "join_PyChat", "server": server}) + "&"
                                 break
 
@@ -241,9 +241,10 @@ def client(conn,addr,client_ID):
             print(f"{addr} lost conncection at {datetime.now().strftime('%I:%M:%S%p')}")
             break
     for server in servers:
-        if client_ID in servers[server]["clients"]:
-            if server["server_info"]["Type"] == "Snake":
-                leave_snake(client_ID, server)
+        if server["server_info"]["Type"] != "PyChat":
+            if client_ID in server["clients"]:
+                if server["server_info"]["Type"] == "Snake":
+                    leave_snake(client_ID, server["ID"])
 
 
     conn.close()

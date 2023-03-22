@@ -169,7 +169,6 @@ class Snake:
             self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.my_direction,"body":self.player.color1,"eyes":self.player.color2}}
             self.join_ = False
 
-
     def draw_snake(self,snake):
         for each in snake[1:-1]:
             sx, sy = each
@@ -324,7 +323,11 @@ class Snake:
         self.my_snake.pop(0)
 
     def settings(self):
-        pass
+        if gui.button(self.theme, (0, 50), (100, 20), "exit game", self.Input):
+            return "exit"
+
+    def exit(self):
+        self.n.send({"packet": "leave_server", "server": self.server_ID})
 
     def update(self):
         for key in self.Input.keys:
