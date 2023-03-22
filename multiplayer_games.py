@@ -243,21 +243,6 @@ class Snake:
         pygame.draw.circle(self.display, self.player.color2, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
         pygame.draw.circle(self.display, self.player.color2, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
 
-    def move_snake(self):
-        self.old_snake = self.my_snake[0]
-        hx, hy = self.my_snake[-1]
-        if self.my_direction == "up":
-            hy -= 1
-        if self.my_direction == "down":
-            hy += 1
-        if self.my_direction == "left":
-            hx += 1
-        if self.my_direction == "right":
-            hx -= 1
-
-        self.my_snake.append((hx, hy))
-        self.my_snake.pop(0)
-
     def make_apple(self):
         timeout = time.perf_counter() + 0.08
         ax = random.randrange(0, self.gx+1)
@@ -323,13 +308,13 @@ class Snake:
     def move_snake(self):
         self.old_snake = self.my_snake[0]
         hx, hy = self.my_snake[-1]
-        if self.direction == "up":
+        if self.my_direction == "up":
             hy -= 1
-        if self.direction == "down":
+        if self.my_direction == "down":
             hy += 1
-        if self.direction == "left":
+        if self.my_direction == "left":
             hx += 1
-        if self.direction == "right":
+        if self.my_direction == "right":
             hx -= 1
 
         self.my_snake.append((hx, hy))
@@ -372,7 +357,7 @@ class Snake:
         data = self.n.receive("snake_data")
         if data != None:
             self.snakes = data["data"]
-
+        self.draw_grid()
         self.draw_apple()
         for name in self.snakes:
             snake = self.snakes[name]
@@ -380,11 +365,10 @@ class Snake:
             self.direction = snake["direction"]
             self.snake_color = snake["body"]
             self.eyes = snake["eyes"]
-            self.draw_grid()
             self.draw_snake()
             self.draw_head()
             self.draw_tail()
-            self.score()
+        self.score()
 
 
 class Dot_Game:
