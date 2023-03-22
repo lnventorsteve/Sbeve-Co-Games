@@ -383,6 +383,8 @@ class Snake:
             self.draw_head(self.snake,self.direction)
             self.draw_tail(self.snake)
 
+        self.snake_color = self.player.color1
+        self.eyes = self.player.color2
         self.draw_snake(self.my_snake)
         self.draw_head(self.my_snake, self.my_direction)
         self.draw_tail(self.my_snake)
