@@ -149,8 +149,12 @@ def client(conn,addr):
                         servers[data["server"]]["Snakes"][data["name"]]["direction"] = data["direction"]
                         servers[data["server"]]["Snakes"][data["name"]]["body"] = data["body"]
                         servers[data["server"]]["Snakes"][data["name"]]["eyes"] = data["eyes"]
+                        snakes_to_send = {}
+                        for snake in servers[data["server"]]["Snakes"]:
+                            if snake != data["name"]:
+                                snakes_to_send[snake] = servers[data["server"]]["Snakes"][snake]
 
-                        reply += json.dumps({"packet": "snake_data", "data": servers[data["server"]]["Snakes"]}) + "&"
+                        reply += json.dumps({"packet": "snake_data", "data": snakes_to_send}) + "&"
 
 # PyChat
                     elif data["packet"] == "new_PyChat":

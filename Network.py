@@ -9,7 +9,7 @@ from datetime import datetime
 #50.71.208.175
 class Network:
     def __init__(self):
-        self.server = "142.161.10.140"
+        self.server = "192.168.100.100"
         self.port = 25562
         self.addr = (self.server,self.port)
         self.data = []
@@ -69,7 +69,7 @@ def client(conn,addr):
                     for packet in packets:
                         if packet != "" and packet != "null":
                             receive.append(json.loads(packet))
-                print(f"packet took {time.perf_counter() - start} to send and receive" )
+                #print(f"packet took {time.perf_counter() - start} to send and receive" )
         except Exception as e:
             print(e)
             print(f"{addr} lost conncection at {datetime.now().strftime('%I:%M:%S%p')}")
