@@ -369,7 +369,7 @@ class Snake:
         data = self.n.receive("snake_data")
         if data != None:
             self.snakes = data["data"]
-        #self.draw_grid()
+        self.draw_grid()
         self.draw_apple()
         self.all_snakes = []
         for name in self.snakes:
