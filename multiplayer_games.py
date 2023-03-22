@@ -50,6 +50,7 @@ class Snake:
         self.server_ID = None
         self.clients = {}
         self.snakes = []
+        self.all_snakes = []
         self.input_direction = "left"
         self.inputs = ["left"]
         self.last_direction = "left"
@@ -276,7 +277,7 @@ class Snake:
             self.dead = True
         elif hy > self.gy:
             self.dead = True
-        elif self.my_snake[-1] in self.my_snake[0:-2]:
+        elif self.my_snake[-1] in self.all_snakes[:-2]:
             self.dead = True
 
         if self.dead:
@@ -351,6 +352,9 @@ class Snake:
                 self.my_direction = self.inputs[0]
                 self.move_snake()
                 self.death()
+                if self.my_snake[-1] == self.apple:
+                    self.my_snake.insert(0, self.my_snake[0])
+                    self.make_apple()
             self.n.send(
                 {"packet": "snake_data", "server": self.server_ID, "name": self.player.name, "snake": self.my_snake,
                  "direction": self.my_direction, "body": self.player.color1, "eyes": self.player.color2})
@@ -359,9 +363,11 @@ class Snake:
             self.snakes = data["data"]
         self.draw_grid()
         self.draw_apple()
+        self.all_snakes = []
         for name in self.snakes:
             snake = self.snakes[name]
             self.snake = snake["snake"]
+            self.all_snakes.append(self.snake )
             self.direction = snake["direction"]
             self.snake_color = snake["body"]
             self.eyes = snake["eyes"]
