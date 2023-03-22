@@ -743,9 +743,8 @@ if __name__ == "__main__":
                         if game.setup():
                             sub_screen.pop()
                             in_game = False
-                    elif mpgame:
-                        if game.join_:
-                            game.join()
+                    elif game.join_:
+                        game.join()
                     else:
                         button = game.update()
                         if button == "settings":

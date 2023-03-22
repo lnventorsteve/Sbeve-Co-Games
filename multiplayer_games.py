@@ -50,6 +50,7 @@ class Snake:
         self.server_ID = None
         self.clients = {}
         self.snakes = []
+        self.apples = []
         self.all_snakes = []
         self.input_direction = "left"
         self.inputs = ["left"]
@@ -62,6 +63,7 @@ class Snake:
         self.width_gui = gui.Text_Box(self.theme,(-25,-50),(47.5,20),"Width",default_text="Width")
         self.height_gui = gui.Text_Box(self.theme,(25,-50),(47.5,20),"Height",default_text="Height")
         self.grid_gui = gui.multiple_choice_input(self.theme,(0,0),(100,20),"Grid","On",["On","Off"],2)
+        self.num_apples_gui = gui.lable_text(self.theme, (0, -125), (100, 20), "Number of Apples", 1)
 
 
         self.bg = background.Snake_background(self.display,self.screen[0]*2,self.screen[1]*2,600)
@@ -76,8 +78,10 @@ class Snake:
         self.width_gui.update(self.Input)
         self.height_gui.update(self.Input)
         self.grid_gui.update(self.Input)
+        self.num_apples_gui.update(self.Input)
         if gui.button(self.theme, (0, 50), (100, 20), "Play", self.Input):
-            if gui.get_text(self.width_gui).isnumeric() and gui.get_text(self.height_gui).isnumeric() and gui.get_text(self.scaleSettings_gui).isnumeric() and gui.get_text(self.maxplayers_gui).isnumeric():
+            if gui.get_text(self.width_gui).isnumeric() and gui.get_text(self.height_gui).isnumeric() \
+                    and gui.get_text(self.scaleSettings_gui).isnumeric() and gui.get_text(self.maxplayers_gui).isnumeric() and gui.get_text(self.num_apples_gui).isnumeric():
                 self.grid_size = (int(gui.get_text(self.width_gui))-1, int(gui.get_text(self.height_gui))-1)
                 if self.grid_gui.text == "On":
                     self.grid_state = True
@@ -110,7 +114,21 @@ class Snake:
             self.server_ID = data["server"]["ID"]
             self.n.send({"packet": "add_data", "server": self.server_ID, "key": "server_info", "data": {"Host":self.player.name,"Type":"game","Name":"Snake","Max players":gui.get_text(self.maxplayers_gui),"Grid":(self.gx+1, self.gy+1),"Difficulty":self.d_text}})
             self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Snakes", "data": {}})
-            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Apples", "data": []})
+            self.apples = []
+            for apple in range(int(gui.get_text(self.num_apples_gui))):
+                timeout = time.perf_counter() + 0.08
+                ax = random.randrange(0, self.gx + 1)
+                ay = random.randrange(0, self.gy + 1)
+                while (ax, ay) in self.apples:
+                    ax = random.randrange(0, self.gx + 1)
+                    ay = random.randrange(0, self.gy + 1)
+                    if time.perf_counter() > timeout:
+                        self.apple = (-1, -1)
+                        break
+                self.apples.append((ax, ay))
+
+
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Apples", "data": self.apples})
             self.n.send({"packet": "join_server", "server": self.server_ID,"name":self.player.name})
             self.setup_ = True
 
@@ -122,7 +140,6 @@ class Snake:
             self.screeny = self.screen[1] - (self.gy + 1) / 2 * self.snake_scale
             self.my_snake = [(0, int(self.gy / 2)), (0, int(self.gy / 2)), (1, int(self.gy / 2))]
             self.snake = self.my_snake
-            self.make_apple()
             self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.my_direction,"body":self.player.color1,"eyes":self.player.color2}}
 
         if gui.button(self.theme, (0, self.theme.screen[1] / self.theme.scale - 15), (100, 20), "back", self.Input):
@@ -165,7 +182,6 @@ class Snake:
             self.screeny = self.screen[1] - (self.gy + 1) / 2 * self.snake_scale
             self.my_snake = [(0, int(self.gy / 2)), (0, int(self.gy / 2)), (1, int(self.gy / 2))]
             self.snake = self.my_snake
-            self.make_apple()
             self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.my_direction,"body":self.player.color1,"eyes":self.player.color2}}
             self.join_ = False
 
@@ -243,20 +259,8 @@ class Snake:
         pygame.draw.circle(self.display, eye_color, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
         pygame.draw.circle(self.display, eye_color, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
 
-    def make_apple(self):
-        timeout = time.perf_counter() + 0.08
-        ax = random.randrange(0, self.gx+1)
-        ay = random.randrange(0, self.gy+1)
-        while (ax, ay) in self.snake:
-            ax = random.randrange(0, self.gx+1)
-            ay = random.randrange(0, self.gy+1)
-            if time.perf_counter() > timeout:
-                self.apple = (-1,-1)
-                break
-        self.apple = (ax,ay)
-
-    def draw_apple(self):
-        ax, ay = self.apple
+    def draw_apple(self,apple):
+        ax, ay = apple
         ax = ax * self.snake_scale
         ay = ay * self.snake_scale + self.snake_scale
         pygame.draw.rect(self.display, (128, 70, 27), (self.screenx + ax + 14*self.apple_scale, self.screeny + ay + 2*self.apple_scale, 4*self.apple_scale, 8*self.apple_scale))
@@ -268,7 +272,6 @@ class Snake:
 
     def death(self):
         hx, hy = self.my_snake[-1]
-        print(self.all_snakes[0:-1])
 
         if 0 > hx:
             self.dead = True
@@ -278,8 +281,12 @@ class Snake:
             self.dead = True
         elif hy > self.gy:
             self.dead = True
-        elif self.my_snake[-1] in self.all_snakes[0:-1]:
+        elif self.my_snake[-1] in self.my_snake[:-1]:
             self.dead = True
+        for each in self.all_snakes:
+            ex,ey = each
+            if (hx, hy) == (ex,ey):
+                self.dead = True
 
         if self.dead:
             self.my_snake.pop()
@@ -287,12 +294,12 @@ class Snake:
 
     def score(self):
         gui.lable_value(self.theme, (0, -(self.gy / 2) * (self.snake_scale / self.scale)), "score = ",
-                        (len(self.snake) - 3), in_box=True,
+                        (len(self.my_snake) - 3), in_box=True,
                         size=(((self.gx + 1) * self.snake_scale) / self.scale, self.snake_scale / self.scale))
-        if len(self.snake) - 3 > self.player.highScores["snake"][
+        if len(self.my_snake) - 3 > self.player.highScores["snake"][
             f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1} on {self.d_text}"]:
             self.player.highScores["snake"][
-                f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1} on {self.d_text}"] = len(self.snake) - 3
+                f"{self.grid_size[0] + 1} by {self.grid_size[1] + 1} on {self.d_text}"] = len(self.my_snake) - 3
 
     def draw_grid(self):
         for x in range(self.gx + 2):
@@ -360,17 +367,22 @@ class Snake:
                 self.my_direction = self.inputs[0]
                 self.move_snake()
                 self.death()
-                if self.my_snake[-1] == self.apple:
-                    self.my_snake.insert(0, self.my_snake[0])
-                    self.make_apple()
+                print(self.my_snake[-1],self.apples)
+                for apple in self.apples:
+                    ax,ay = apple
+                    if self.my_snake[-1] == (ax,ay):
+                        self.my_snake.insert(0, self.my_snake[0])
+                        self.n.send({"packet": "ate_apple","server": self.server_ID,"apple":self.my_snake[-1]})
             self.n.send(
                 {"packet": "snake_data", "server": self.server_ID, "name": self.player.name, "snake": self.my_snake,
                  "direction": self.my_direction, "body": self.player.color1, "eyes": self.player.color2})
         data = self.n.receive("snake_data")
         if data != None:
-            self.snakes = data["data"]
+            self.snakes = data["Snakes"]
+            self.apples = data["Apples"]
         self.draw_grid()
-        self.draw_apple()
+        for apple in self.apples:
+            self.draw_apple(apple)
         self.all_snakes = []
         for name in self.snakes:
             snake = self.snakes[name]

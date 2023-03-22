@@ -4,6 +4,7 @@ import time
 import json
 import os
 import math
+import random
 from datetime import datetime
 import traceback
 
@@ -152,7 +153,34 @@ def client(conn,addr,client_ID):
                             if snake != data["name"]:
                                 snakes_to_send[snake] = servers[data["server"]]["Snakes"][snake]
 
-                        reply += json.dumps({"packet": "snake_data", "data": snakes_to_send}) + "&"
+                        reply += json.dumps({"packet": "snake_data", "Snakes": snakes_to_send,"Apples":servers[data["server"]]["Apples"]}) + "&"
+
+                    elif data["packet"] == "ate_apple":
+                        ax ,ay = data["apple"]
+                        apple = []
+                        apple.append(ax)
+                        apple.append(ay)
+                        servers[data["server"]]["Apples"].remove(apple)
+                        timeout = time.perf_counter() + 0.08
+                        ax = random.randrange(0, servers[data["server"]]["server_info"]["Grid"][0])
+                        ay = random.randrange(0, servers[data["server"]]["server_info"]["Grid"][1])
+                        snakes_ = []
+                        for name in servers[data["server"]]["Snakes"]:
+                            for each in servers[data["server"]]["Snakes"][name]["snake"]:
+                                ex, ey = each
+                                snakes_.append((ex, ey))
+                        while (ax, ay) in snakes_:
+                            ax = random.randrange(0, servers[data["server"]]["server_info"]["Grid"][0])
+                            ay = random.randrange(0, servers[data["server"]]["server_info"]["Grid"][1])
+                            if time.perf_counter() > timeout:
+                                ax = -1
+                                ay = -1
+                                break
+                        apple = []
+                        apple.append(ax)
+                        apple.append(ay)
+                        servers[data["server"]]["Apples"].append(apple)
+
 
 # PyChat
                     elif data["packet"] == "new_PyChat":

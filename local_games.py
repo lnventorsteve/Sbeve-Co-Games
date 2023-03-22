@@ -23,6 +23,7 @@ class Game_of_Life:
         self.Players = Players
         self.ac = {}
         self.setup_ = True
+        self.join_ = False
         self.grid = True
         self.X = int(theme.screen_info()[1][0] / (self.scale/2))
         self.Y = int(theme.screen_info()[1][1] / (self.scale/2))
@@ -80,8 +81,6 @@ class Game_of_Life:
         if not self.paused:
             self.updatecells()
         self.updatescreen()
-
-
 
     def settings(self):
         if gui.button(self.theme, (0, 50), (100, 20), "Exit Game", self.Input):
@@ -207,6 +206,7 @@ class Dot_Game:
         self.half = self.scale/2
         self.playagain = False
         self.setup_ = False
+        self.join_ = False
 
         self.players = []
         self.dots = []
@@ -253,7 +253,6 @@ class Dot_Game:
 
         if gui.button(self.theme, (0, self.theme.screen[1]/self.theme.scale-15), (100, 15), "back", self.Input):
             return True
-
 
     def load(self):
         self.players = []
@@ -407,6 +406,7 @@ class Snake:
         self.debug = False
         self.dead = False
         self.setup_ = False
+        self.join_ = False
         self.Players = Players
         self.player = self.Players[0]
         if "snake" not in self.player.highScores:
@@ -735,6 +735,7 @@ class Snake:
 class cookie_clicker:
     def __init__(self,theme,Input,player):
         self.setup_ = True
+        self.join_ = False
         self.theme = theme
         self.Input = Input
         self.player = player.name
@@ -811,6 +812,7 @@ class cookie_clicker:
 class bird:
     def __init__(self, theme, Input, players):
         self.setup_ = True
+        self.join_ = False
         self.theme = theme
         self.display = theme.display
         self.Input = Input
@@ -1001,6 +1003,7 @@ class bird:
 
 class Connect_4:
     def __init__(self, theme, Input, Players):
+        self.join_ = False
         self.theme = theme
         self.display = theme.display
         self.Input = Input
@@ -1197,6 +1200,7 @@ class new_game:
         self.Input = Input
         self.Players = Players
         self.setup_ = False
+        self.join_ = False
 
     def load(self):
         pass
