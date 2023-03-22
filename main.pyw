@@ -961,9 +961,12 @@ if n.is_connected():
     n.send({"packet": "disconnect"})
     data = None
     timeout = time.perf_counter()+1
-    while data == None or time.perf_counter() > timeout:
+    while data == None:
         data = n.receive("disconnected")
         time.sleep(0.1)
+        if time.perf_counter() > timeout:
+            print(print("failed to disconnect from the server Error: packet timeout"))
+            break
     if  data["packet"] == "disconnected":
         print("Disconnected form server")
 
