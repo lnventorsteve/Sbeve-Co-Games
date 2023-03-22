@@ -40,7 +40,7 @@ class Player_class:
         self.score = 0
 
 
-def client(conn,addr):
+def client(conn,addr,client_ID):
     global servers
     global clients
     reply = "null"
@@ -60,6 +60,11 @@ def client(conn,addr):
 
     def sort_servers_by_ID(server):
         return server["ID"]
+
+    def leave_snake(client,server):
+        client_name = servers[server]["clients"][client]
+        servers[server]["Snakes"].pop(client_name)
+        servers[data["server"]]["clients"].pop(client)
 
 
     while True:
@@ -86,21 +91,15 @@ def client(conn,addr):
 
 # join a game server
                     elif data["packet"] == "join_server":
-                        client_IDs = []
-                        for client in servers[data["server"]]["clients"]:
-                            print(client)
-                            client_IDs.append(servers[data["server"]]["clients"][client])
-
-                        client_ID = 0
-                        while client_ID in client_IDs:
-                            client_ID += 1
-
-                        servers[data["server"]]["clients"][data["name"]] = client_ID
+                        servers[data["server"]]["clients"][client_ID] = data["name"]
                         reply += json.dumps({"packet":"join_server","clients":servers[data["server"]]["clients"]}) + "&"
 
 # Leave a game server
                     elif data["packet"] == "leave_server":
-                        servers[data["server"]]["clients"].pop(data["name"])
+                        name = servers[data["server"]]["server_info"]["Name"]
+                        if name == "Snake":
+                            leave_snake(client_ID,servers[data["server"]])
+
                         reply += json.dumps({"packet":"leave_server"}) + "&"
 
 # create new server
@@ -241,16 +240,29 @@ def client(conn,addr):
             traceback.print_exc()
             print(f"{addr} lost conncection at {datetime.now().strftime('%I:%M:%S%p')}")
             break
+    for server in servers:
+        if client_ID in servers[server]["clients"]:
+            if server["server_info"]["Type"] == "Snake":
+                leave_snake(client_ID, server)
+
+
     conn.close()
 
 global servers
 servers = []
 global clients
-clients = []
+clients = {}
 
 
 while True:
     conn, addr = s.accept()
     print("Connected to :", addr, "at",datetime.now().strftime("%I:%M:%S%p"))
-    clients.append(addr)
-    start_new_thread(client, (conn,addr))
+
+    client_IDs = []
+    for each in clients:
+        client_IDs.append(clients[each])
+    client_ID = 0
+    while client_ID in client_IDs:
+        client_ID += 1
+    clients[addr] = client_ID
+    start_new_thread(client, (conn,addr,client_ID))
