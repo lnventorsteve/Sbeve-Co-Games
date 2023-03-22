@@ -650,7 +650,7 @@ if __name__ == "__main__":
                             if gui.alert(theme, (0, 0), (300, 200), f"Are you sure you want to PERMANENTLY delete {current_player.name} forever! This will delete all player data!", "Yes", "No",Input, frame):
                                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25),(0, -current_h / (2 * scale) + 15), 2, 3, (300, 15),f"{current_player.name} has been deleted!")
                                 os.remove(f"playerdata/{current_player.name}.json")
-                                Players.pop(current_player)
+                                Players.remove(current_player)
                                 reload_players = True
                                 sub_screen.pop()
 
