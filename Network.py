@@ -9,7 +9,7 @@ from datetime import datetime
 #50.71.208.175
 class Network:
     def __init__(self):
-        self.server = "192.168.100.100"
+        self.server = "142.161.10.140"
         self.port = 25562
         self.addr = (self.server,self.port)
         self.data = []
