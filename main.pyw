@@ -101,6 +101,7 @@ reconnecting = False
 debug = False
 setting = False
 in_game = False
+mpgame = False
 pychat = False
 reset_screen = False
 reload_players = False
@@ -482,6 +483,7 @@ if __name__ == "__main__":
                         game = multiplayer_games.Snake(theme, Input, Players,n)
                         game.setup_ = True
                         game.join_ = True
+                        mpgame = True
                         game.clients = clients
                         game.server_ID = server_ID
                         n.send({"packet": "get_data", "server": server_ID, "key": "server_info"})
@@ -492,11 +494,13 @@ if __name__ == "__main__":
                     elif sub_screen[-1] == "Snake":
                         game = multiplayer_games.Snake(theme, Input, Players,n)
                         in_game = True
+                        mpgame = True
                         sub_screen.pop()
 
                     elif sub_screen[-1] == "Dot Game":
                         game = multiplayer_games.Dot_Game(theme, Input, Players,n)
                         in_game = True
+                        mpgame = True
                         sub_screen.pop()
 
                 elif main_screen[-1] == "random":
@@ -533,11 +537,13 @@ if __name__ == "__main__":
                         game = local_games.Dot_Game(theme, Input, Players)
                         game.load()
                         in_game = True
+                        mpgame = False
                         sub_screen.pop()
 
                     elif sub_screen[-1] == "Snake":
                         game = local_games.Snake(theme, Input, Players)
                         in_game = True
+                        mpgame = False
                         sub_screen.pop()
 
                     elif sub_screen[-1] == "Connect 4":
@@ -552,11 +558,13 @@ if __name__ == "__main__":
                     elif sub_screen[-1] == "Cookie Clicker":
                         game = local_games.cookie_clicker(theme, Input, player)
                         in_game = True
+                        mpgame = False
                         sub_screen.pop()
 
                     elif sub_screen[-1] == "Flappy Bird":
                         game = local_games.bird(theme, Input, Players)
                         in_game = True
+                        mpgame = False
                         config["target_fps"] = game_fps
                         sub_screen.pop()
 
@@ -735,8 +743,9 @@ if __name__ == "__main__":
                         if game.setup():
                             sub_screen.pop()
                             in_game = False
-                    elif game.join_:
-                        game.join()
+                    elif mpgame:
+                        if game.join_:
+                            game.join()
                     else:
                         button = game.update()
                         if button == "settings":
