@@ -169,12 +169,12 @@ class Snake:
             self.snakes = {self.player.name:{"snake":self.my_snake,"direction":self.my_direction,"body":self.player.color1,"eyes":self.player.color2}}
             self.join_ = False
 
-    def draw_snake(self,snake):
+    def draw_snake(self,snake,body_color):
         for each in snake[1:-1]:
             sx, sy = each
             sx = sx * self.snake_scale
             sy = sy * self.snake_scale + self.snake_scale
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + sx+1, self.screeny + sy+1, self.snake_scale-1, self.snake_scale-1))
+            pygame.draw.rect(self.display, body_color, (self.screenx + sx+1, self.screeny + sy+1, self.snake_scale-1, self.snake_scale-1))
 
 
         for i in range(len(snake)):
@@ -189,11 +189,11 @@ class Snake:
                 check.append(snake[i + 1])
 
             if (each[0] - 1, each[1]) in check:
-                pygame.draw.line(self.display, self.snake_color, (self.screenx + sx,self.screeny + sy+1),(self.screenx + sx ,self.screeny + sy + self.snake_scale-1))
+                pygame.draw.line(self.display, body_color, (self.screenx + sx,self.screeny + sy+1),(self.screenx + sx ,self.screeny + sy + self.snake_scale-1))
             if (each[0] , each[1]  -1) in check:
-                pygame.draw.line(self.display, self.snake_color, (self.screenx + sx+1,self.screeny + sy),(self.screenx + sx+self.snake_scale-1,self.screeny + sy))
+                pygame.draw.line(self.display, body_color, (self.screenx + sx+1,self.screeny + sy),(self.screenx + sx+self.snake_scale-1,self.screeny + sy))
 
-    def draw_tail(self,snake):
+    def draw_tail(self,snake,body_color):
         tx, ty = snake[0]
         bx, by = snake[1]
         if snake[0] == snake[1]:
@@ -203,33 +203,33 @@ class Snake:
         ty = ty * self.snake_scale + self.snake_scale
         pygame.draw.rect(self.display, (0, 0, 0), (self.screenx + tx + 1, self.screeny + ty + 1, self.snake_scale-1, self.snake_scale-1))
         if tail_dir == (-1, 0):  # right
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + tx + (self.snake_scale/2), self.screeny + ty + 1, (self.snake_scale/2), self.snake_scale-1))
+            pygame.draw.rect(self.display, body_color, (self.screenx + tx + (self.snake_scale/2), self.screeny + ty + 1, (self.snake_scale/2), self.snake_scale-1))
         if tail_dir == (0, -1):  # down
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + tx + 1, self.screeny + ty + (self.snake_scale/2), self.snake_scale-1, (self.snake_scale/2)))
+            pygame.draw.rect(self.display, body_color, (self.screenx + tx + 1, self.screeny + ty + (self.snake_scale/2), self.snake_scale-1, (self.snake_scale/2)))
 
         if tail_dir == (1, 0):  # left
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + tx + 1, self.screeny + ty + 1, (self.snake_scale/2), self.snake_scale-1))
+            pygame.draw.rect(self.display, body_color, (self.screenx + tx + 1, self.screeny + ty + 1, (self.snake_scale/2), self.snake_scale-1))
         if tail_dir == (0, 1):  # up
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + tx + 1, self.screeny + ty + 1, self.snake_scale-1, (self.snake_scale/2)))
+            pygame.draw.rect(self.display, body_color, (self.screenx + tx + 1, self.screeny + ty + 1, self.snake_scale-1, (self.snake_scale/2)))
 
-        pygame.draw.circle(self.display, self.snake_color, (self.screenx + (self.snake_scale/2) + tx, self.screeny + (self.snake_scale/2) + ty), (self.snake_scale/2)-1)
+        pygame.draw.circle(self.display, body_color, (self.screenx + (self.snake_scale/2) + tx, self.screeny + (self.snake_scale/2) + ty), (self.snake_scale/2)-1)
 
-    def draw_head(self,snake,direction):
+    def draw_head(self,snake,direction,body_color,eye_color):
         sx, sy = snake[-1]
         sx = sx * self.snake_scale
         sy = sy * self.snake_scale + self.snake_scale
         if direction == "up":
             eyes = ((6*self.apple_scale, 10*self.apple_scale), (26*self.apple_scale, 10*self.apple_scale))
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + sx + 1, self.screeny + sy + (self.snake_scale/2), self.snake_scale-1, (self.snake_scale/2)))
+            pygame.draw.rect(self.display, body_color, (self.screenx + sx + 1, self.screeny + sy + (self.snake_scale/2), self.snake_scale-1, (self.snake_scale/2)))
         elif direction == "right":
             eyes = ((10*self.apple_scale, 26*self.apple_scale), (10*self.apple_scale, 6*self.apple_scale))
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + sx + (self.snake_scale/2), self.screeny + sy + 1, (self.snake_scale/2), self.snake_scale-1))
+            pygame.draw.rect(self.display, body_color, (self.screenx + sx + (self.snake_scale/2), self.screeny + sy + 1, (self.snake_scale/2), self.snake_scale-1))
         elif direction == "down":
             eyes = ((26*self.apple_scale, 22*self.apple_scale), (6*self.apple_scale, 22*self.apple_scale))
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + sx + 1, self.screeny + sy + 1, self.snake_scale-1, (self.snake_scale/2)))
+            pygame.draw.rect(self.display, body_color, (self.screenx + sx + 1, self.screeny + sy + 1, self.snake_scale-1, (self.snake_scale/2)))
         elif direction == "left":
             eyes = ((22*self.apple_scale, 6*self.apple_scale), (22*self.apple_scale, 26*self.apple_scale))
-            pygame.draw.rect(self.display, self.snake_color, (self.screenx + sx + 1, self.screeny + sy + 1, (self.snake_scale/2), self.snake_scale-1))
+            pygame.draw.rect(self.display, body_color, (self.screenx + sx + 1, self.screeny + sy + 1, (self.snake_scale/2), self.snake_scale-1))
         left_eye, right_eye = eyes
 
         lex, ley = left_eye
@@ -239,9 +239,9 @@ class Snake:
         ley = ley + sy
         rex = rex + sx
         rey = rey + sy
-        pygame.draw.circle(self.display, self.snake_color, (self.screenx + (self.snake_scale/2) + sx, self.screeny + (self.snake_scale/2) + sy), (self.snake_scale/2)-1)
-        pygame.draw.circle(self.display, self.player.color2, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
-        pygame.draw.circle(self.display, self.player.color2, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
+        pygame.draw.circle(self.display, body_color, (self.screenx + (self.snake_scale/2) + sx, self.screeny + (self.snake_scale/2) + sy), (self.snake_scale/2)-1)
+        pygame.draw.circle(self.display, eye_color, (self.screenx + lex, self.screeny + ley), 3*self.apple_scale)
+        pygame.draw.circle(self.display, eye_color, (self.screenx + rex, self.screeny + rey), 3*self.apple_scale)
 
     def make_apple(self):
         timeout = time.perf_counter() + 0.08
@@ -369,25 +369,19 @@ class Snake:
         data = self.n.receive("snake_data")
         if data != None:
             self.snakes = data["data"]
-        self.draw_grid()
+        #self.draw_grid()
         self.draw_apple()
         self.all_snakes = []
         for name in self.snakes:
             snake = self.snakes[name]
-            self.snake = snake["snake"]
-            self.all_snakes += self.snake
-            self.direction = snake["direction"]
-            self.snake_color = snake["body"]
-            self.eyes = snake["eyes"]
-            self.draw_snake(self.snake)
-            self.draw_head(self.snake,self.direction)
-            self.draw_tail(self.snake)
+            self.all_snakes += snake["snake"]
+            self.draw_snake(snake["snake"] ,snake["body"])
+            self.draw_head(snake["snake"] ,snake["direction"],snake["body"],snake["eyes"])
+            self.draw_tail(snake["snake"] ,snake["body"])
 
-        self.snake_color = self.player.color1
-        self.eyes = self.player.color2
-        self.draw_snake(self.my_snake)
-        self.draw_head(self.my_snake, self.my_direction)
-        self.draw_tail(self.my_snake)
+        self.draw_snake(self.my_snake,self.player.color1)
+        self.draw_head(self.my_snake, self.my_direction,self.player.color1,self.player.color2)
+        self.draw_tail(self.my_snake,self.player.color1)
         self.score()
 
 

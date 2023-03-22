@@ -948,17 +948,17 @@ config["volume"] = volume
 
 with open("conf.json", "w") as conf:
     conf.write(json.dumps(config))
-"""
-if connected:
-    send = {"packet": "disconnect"}
-    n.send(json.dumps(send))
+
+if n.is_connected():
+    n.send({"packet": "disconnect"})
     data = None
     timeout = time.perf_counter()+1
     while data == None or time.perf_counter() > timeout:
         data = n.receive("disconnected")
+        time.sleep(0.1)
     if  data["packet"] == "disconnected":
         print("Disconnected form server")
-"""
+
 
 for player in Players:
     player.save_player()

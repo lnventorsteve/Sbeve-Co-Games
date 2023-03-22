@@ -45,7 +45,7 @@ def client(conn,addr,client_ID):
     global clients
     reply = "null"
     data = ""
-
+    Connected = True
     def add_message(data):
         name = data["player"]
         new_message = data["message"]
@@ -67,7 +67,7 @@ def client(conn,addr,client_ID):
         servers[data["server"]]["clients"].pop(client)
 
 
-    while True:
+    while Connected:
         try:
             _data = conn.recv(2048).decode("utf-8")
             if _data == "":
@@ -227,9 +227,10 @@ def client(conn,addr,client_ID):
 # Disconnect from server
 
                     elif data["packet"] == "disconnect":
-                        print("disconnecting")
+                        print(f"disconnecting form {addr} at {datetime.now().strftime('%I:%M:%S%p')}")
                         conn.sendall(str.encode('{"packet":"disconnected"}'))
-                        break
+                        Connected = False
+
             if len(reply.encode('utf-8')) > 2048:
                 print("packet to big")
             if reply == "":
