@@ -602,3 +602,217 @@ class Dot_Game:
             game["players"][player]["squares"] = self.squares[player]
         with open("saves/dotgame.json", "w") as old_game:
             old_game.write(json.dumps(game))
+
+class Connect_4:
+    def __init__(self, theme, Input, Players,n):
+        self.join_ = False
+        self.theme = theme
+        self.display = theme.display
+        self.screen = theme.screen
+        self.Input = Input
+        self.Players = Players
+        self.players = []
+        self.n = n
+        self.setup_ = False
+        self.player = Players[0]
+        self.next_frame = time.perf_counter()
+        self.color1 = self.player.color1
+        self.board = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+        self.winner = 0
+        self.win = 0
+        self.turn = "player 1"
+        self.scale = 1
+        self.scale_ui = gui.slider(self.theme,(0, 0), (100, 20),"right",self.Input, value = self.scale/2)
+        self.xoff = (self.theme.width - 910* self.scale) /2
+        self.yoff = (self.theme.height - 780* self.scale) /2
+        self.create = True
+
+    def setup(self):
+        if self.create:
+            self.n.send({"packet": "new_server"})
+            self.create = False
+
+        data = self.n.receive("new_server")
+        if data != None:
+            self.server_ID = data["server"]["ID"]
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "server_info","data": {"Host": self.player.name, "Type": "game", "Name": "Connect 4","Max players": 2}})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Board", "data": [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]})
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "moves", "data": []})
+            self.setup_ = True
+            self.n.send({"packet": "join_server", "server": self.server_ID, "name": self.player.name})
+
+    def join(self):
+        gui.lable(self.theme, (0, 0), "Getting Server Info")
+        print("stuck")
+        data = self.n.receive("server_info")
+        if data != None:
+            self.join_ = False
+
+
+    def settings(self):
+        gui.text(self.theme, (0, -25), "Scale",in_box = True, size = (100, 20), )
+        self.scale_ui.update()
+        if gui.button(self.theme, (0, 25), (100, 20), "Save Changes", self.Input):
+            self.scale = self.scale_ui.value*2
+            self.xoff = (self.theme.width - 910 * self.scale) / 2
+            self.yoff = (self.theme.height - 780 * self.scale) / 2
+        if gui.button(self.theme, (0, 50), (100, 20), "Return to Game", self.Input):
+            return "back"
+        if gui.button(self.theme, (0, 100), (100, 20), "Exit Game", self.Input):
+            return "exit"
+
+    def update_screen(self):
+        pygame.draw.rect(self.display, (0, 0, 130), (self.xoff-10, self.yoff-10, 910 * self.scale+20, 780 * self.scale+20))
+        pygame.draw.rect(self.display,(0,0,180),(self.xoff,self.yoff,910 * self.scale,780 * self.scale))
+        if self.winner != 0:
+            self.board = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+            for piece in self.winning_pieces:
+                column, row = piece
+                self.board[column][row] = self.winner
+
+        board_x = -1
+        for column in self.board:
+            board_x += 1
+            board_y = 0
+            for row in column:
+                board_y += 1
+                x = board_x * 130 * self.scale + 65 * self.scale + self.xoff
+                y = board_y * 130 * self.scale - 65 * self.scale + self.yoff
+                if row == 0:
+                    pygame.draw.circle(self.display, (0, 0, 130), (x, y), 60*self.scale)
+                    pygame.draw.circle(self.display, (255, 255, 255), (x, y), 50*self.scale)
+                if row == 1:
+                    pygame.draw.circle(self.display, (0, 0, 130), (x, y), 60*self.scale)
+                    pygame.draw.circle(self.display, self.color1, (x, y), 50*self.scale)
+                if row == 2:
+                    pygame.draw.circle(self.display, (0, 0, 130), (x, y), 60*self.scale)
+                    pygame.draw.circle(self.display, self.color2, (x, y), 50*self.scale)
+
+
+
+    def update(self):
+        while len(self.players) < 2:
+            gui.lable(self.theme, (0, 0), "Waiting for second player to join")
+            if time.perf_counter() >= self.next_frame and self.winner == 0:
+                self.next_frame = time.perf_counter() + 0.1
+                self.n.send({"packet":"get_data","server":self.server_ID,"key":"clients"})
+            data = self.n.receive("clients")
+            if data != None:
+                self.players = data["data"]
+                if len(self.players) > 1:
+                    self.n.send({"packet": "get_data", "server": self.server_ID, "key": "moves"})
+            return ""
+
+        data = self.n.receive("moves")
+        if data != None:
+            self.n.send({"packet": "get_data", "server": self.server_ID, "key": "moves"})
+            moves = data["data"]
+            new_moves = len(moves) - len(self.moves)
+            if new_moves > 0:
+                move = moves[-new_moves]
+                self.moves.append(move)
+                #self.board[move][0] =
+
+
+
+
+        if time.perf_counter() >= self.next_frame and self.winner == 0:
+            self.next_frame = time.perf_counter() + 0.1
+            for column in self.board:
+                for row in range(5):
+                    if column[5 - row] == 0:
+                        column[5 - row] = column[4 - row]
+                        column[4 - row] = 0
+            self.win += 1
+
+        if 114 in self.Input.keys:
+            self.n.send({"packet": "add_data", "server": self.server_ID, "key": "Board", "data": [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]})
+            self.winner = 0
+            self.win = 0
+            self.turn = "player 1"
+
+        if self.winner == 0 and self.win > 6:
+            mouse_x, mouse_y, mb = self.Input.mouse()
+            mouse_x-=self.xoff
+            if mouse_x > 0 and  mouse_x < 910* self.scale and mb == 1:
+                print(mouse_x)
+                mouse_x = round((mouse_x / (130* self.scale)) - 0.5)
+                print(mouse_x)
+                if self.turn == "player 1" and self.board[mouse_x][0] == 0 :
+                    self.n.send({"packet": "append_data", "server": self.server_ID, "key": "moves", "data": mouse_x})
+                    self.turn = "player 2"
+
+
+
+
+
+        if self.win == 6:
+            self.winner = 0
+            self.winning_pieces = []
+            for column in range(3):
+                for check in range(6):
+                    if self.board[column][check] == 1 and self.board[column + 1][check] == 1 and self.board[column + 2][check] == 1 and \
+                            self.board[column + 3][check] == 1:
+                        self.winning_pieces = [(column, check), (column + 1, check), (column + 2, check),
+                                          (column + 3, check)]
+                        self.winner = 1
+                        print("player 1 won")
+                    if self.board[column][check] == 2 and self.board[column + 1][check] == 2 and self.board[column + 2][check] == 2 and \
+                            self.board[column + 3][check] == 2:
+                        self.winning_pieces = [(column, check), (column + 1, check), (column + 2, check),
+                                          (column + 3, check)]
+                        self.winner = 2
+                        print("player 2 won")
+            for column in range(6):
+                for row in range(3):
+                    if self.board[column][row] == 1 and self.board[column][row + 1] == 1 and self.board[column][row + 2] == 1 and \
+                            self.board[column][row + 3] == 1:
+                        self.winning_pieces = [(column, row), (column, row + 1), (column, row + 2), (column, row + 3)]
+                        self.winner = 1
+                        print("player 1 won")
+                    if self.board[column][row] == 2 and self.board[column][row + 1] == 2 and self.board[column][row + 2] == 2 and \
+                            self.board[column][row + 3] == 2:
+                        self.winning_pieces = [(column, row), (column, row + 1), (column, row + 2), (column, row + 3)]
+                        self.winner = 2
+                        print("player 2 won")
+            for column in range(4):
+                for check in range(3):
+                    if self.board[column][check] == 1 and self.board[column + 1][check + 1] == 1 and self.board[column + 2][
+                        check + 2] == 1 and self.board[column + 3][check + 3] == 1:
+                        self.winning_pieces = [(column, check), (column + 1, check + 1), (column + 2, check + 2),
+                                          (column + 3, check + 3)]
+                        self.winner = 1
+                        print("player 1 won")
+                    if self.board[column][check] == 2 and self.board[column + 1][check + 1] == 2 and self.board[column + 2][
+                        check + 2] == 2 and self.board[column + 3][check + 3] == 2:
+                        self.winning_pieces = [(column, check), (column + 1, check + 1), (column + 2, check + 2),
+                                          (column + 3, check + 3)]
+                        self.winner = 2
+                        print("player 2 won")
+            for column in range(4):
+                for check in range(3):
+                    if self.board[column][check + 3] == 1 and self.board[column + 1][check + 2] == 1 and self.board[column + 2][
+                        check + 1] == 1 and self.board[column + 3][check] == 1:
+                        self.winning_pieces = [(column, check + 3), (column + 1, check + 2), (column + 2, check + 1),
+                                          (column + 3, check)]
+                        self.winner = 1
+                        print("player 1 won")
+                    if self.board[column][check + 3] == 2 and self.board[column + 1][check + 2] == 2 and self.board[column + 2][
+                        check + 1] == 2 and self.board[column + 3][check] == 2:
+                        self.winning_pieces = [(column, check + 3), (column + 1, check + 2), (column + 2, check + 1),
+                                          (column + 3, check)]
+                        self.winner = 2
+                        print("player 2 won")
+
+
+        self.update_screen()
+
+    def save_exit(self):
+        pass
+
+    def exit(self):
+        self.n.send({"packet": "leave_server", "server": self.server_ID})

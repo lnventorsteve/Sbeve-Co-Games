@@ -12,6 +12,7 @@ import copy
 import PyChat as pc
 import traceback
 import ctypes
+import my_3Dengine as my3d
 
 def load_config():
     try:
@@ -78,6 +79,23 @@ def get_position(player):
     if player.position == 0:
         return  100
     return player.position
+
+class RenderClass:
+    def __init__(self,screen_info):
+        self.RES = self.WIDTH, self.HEIGHT = screen_info[1][0]*2,screen_info[1][1]*2
+        self.H_WIDTH, self.H_HEIGHT = screen_info[1][0],screen_info[1][1]
+        self.screen = screen_info[0]
+
+    def get_object_from_file(self, filename):
+        vertex, faces = [], []
+        with open(filename) as f:
+            for line in f:
+                if line.startswith('v '):
+                    vertex.append([float(i) for i in line.split()[1:]] + [1])
+                elif line.startswith('f'):
+                    faces_ = line.split()[1:]
+                    faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
+        return my3d.Object3D(self, vertex, faces)
 
 #init pygame
 pygame.init()
@@ -253,6 +271,7 @@ if __name__ == "__main__":
 
         for key in Input.keys:
             if key == 27:
+                Input.capture_mouse = False
                 pygame.mixer.Sound.play(theme.sounds("button"))
                 if main_screen[-1] == "main_menu" or in_game and main_screen[-1] != "settings":
                     main_screen.append("settings")
@@ -283,7 +302,8 @@ if __name__ == "__main__":
         display.fill((0, 0, 0))
         if not in_game:
             try:
-                bg = bg.update()
+                #bg = bg.update()
+                pass
             except:
                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25), (0, -current_h / (2 * scale) + 15), 2, 3, (300, 15),"Error updating Background")
         try:
@@ -328,7 +348,16 @@ if __name__ == "__main__":
                         if gui.button(theme, (0, 50), (100, 20), "Settings", Input):
                             main_screen.append("settings")
 
-                        if gui.button(theme, (0, 75), (100, 20), "Quit", Input):
+                        if gui.button(theme, (0, 75), (100, 20), "Test 3D engine", Input):
+                            Render = RenderClass(screen_info)
+                            Render.camera = my3d.Camera(Render , [-5, 6, -55])
+                            Render.projection = my3d.Projection(Render)
+                            Render.object = Render.get_object_from_file('models/t_34_obj.obj')
+                            Render.object.rotate_y(-math.pi / 4)
+                            Input.capture_mouse = True
+                            main_screen.append("3D engine")
+
+                        if gui.button(theme, (0, 100), (100, 20), "Quit", Input):
                             done = True
 
                     if sub_screen[-1] == "Force New player":
@@ -752,6 +781,10 @@ if __name__ == "__main__":
 
                     if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
                         main_screen.pop()
+
+                elif main_screen[-1] == "3D engine":
+                    Render.camera.control(Input)
+                    Render.object.draw()
 
                 else:
                     if main_screen[-1] != "settings":

@@ -2,6 +2,7 @@ import json
 import math
 import os
 import time
+
 import pygame
 import win32clipboard
 
@@ -116,13 +117,19 @@ class Input:
         self.mouse_info = (0, 0, 0)
         self.mouse_button = 0
         self.mouse_position = (0,0)
+        self.p_mouse_position = (0, 0)
         self.c_time = 0
         self.scroll_amount = 0
         self.mods = []
         self.CAPS = False
+        self.looked_x = 0
+        self.looked_y = 0
+        self.capture_mouse = False
 
     def get_input(self,event,frame):
-        mx, my = pygame.mouse.get_pos()
+        if event.type == pygame.MOUSEMOTION:
+            mx, my = self.mouse_position = event.pos
+
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.mouse_button = event.button
@@ -143,7 +150,6 @@ class Input:
                     self.scroll_amount = -1
                 if mb == 5:
                     self.scroll_amount = 1
-            self.mouse_info = (mx, my, 0)
 
         if event.type == pygame.KEYDOWN:
             key = event.key
@@ -190,8 +196,17 @@ class Input:
                     self.mods.remove("CTRL")
 
     def update(self,frame):
-        mx,my = self.mouse_position = pygame.mouse.get_pos()
-        self.mouse_info = (mx,my,self.mouse_button)
+
+        self.mouse_info = (self.mouse_position[0],self.mouse_position[1], self.mouse_button)
+        if self.capture_mouse:
+            pygame.mouse.set_visible(False)
+            self.looked_x = self.p_mouse_position[0]-self.mouse_position[0]
+            self.looked_y = self.p_mouse_position[1]-self.mouse_position[1]
+            self.p_mouse_position = self.mouse_position
+        else:
+            pygame.mouse.set_visible(True)
+
+
         ct = time.perf_counter()
         self.keys = []
         for key in self.Keys_pressed:
@@ -230,6 +245,7 @@ class Input:
         scroll_amount = self.scroll_amount
         self.scroll_amount = 0
         return scroll_amount
+
 
 class Theme:
     def __init__(self,screen_info=(None,(0,0),0),font=default_font,font_size = 12,
@@ -389,7 +405,6 @@ def box(theme, pos, size,border_color = False,background_color = False):
                                         x2 - theme.border*2, y2 - theme.border*2))
 
     return (x - x2 / 2, y - y2 / 2, x + x2 / 2, y + y2 / 2)
-
 
 def text(theme, pos, text, in_box=False, size=False, text_color = False
          ,border_color = False,background_color = False,  center = "center"
@@ -732,7 +747,7 @@ def graph(theme, pos, size, values, name):
     gx, gy = x + x2 / 2, y + y2 / 2
     box(theme, pos, size)
 
-    text(theme, (px, py + sy / 1.7), name, font, tcolor)
+    text(theme, (px, py + sy / 1.7), name, tcolor)
     p_point = None
     total_x = len(values) - 1
     p_time = total_x
@@ -1378,7 +1393,7 @@ def alert(theme, pos, size, name, button1, button2, Input, frame,  timer = False
 
 
 class slider:
-    def __init__(self,theme,pos,size,direction,Input, value = 0):
+    def __init__(self,theme,pos,size,direction,Input, value = 0, audio = False):
         self.Input = Input
         self.theme = theme
         self.screen_info = theme.screen_info()
@@ -1394,6 +1409,7 @@ class slider:
         self.selected = False
         self.p_mouse = self.Input.mouse()
         self.p_value = self.value
+        self.audio = audio
 
     def update(self):
         sx,sy = self.size
@@ -1458,7 +1474,7 @@ class slider:
                 spx = sx/2-sy/4
             elif spx < -sx / 2 + sy/4:
                 spx = -sx / 2 + sy/4
-            slider_pos = (spx,y)
+            slider_pos = (spx,0)
             size = (sy/2,sy)
 
         elif self.direction == "down":
@@ -1476,7 +1492,7 @@ class slider:
                 spx = sx/2-sy/4
             elif spx < -sx / 2 + sy/4:
                 spx = -sx / 2 + sy/4
-            slider_pos = (spx,y)
+            slider_pos = (spx,0)
             size = (sy/2,sy)
         spx,spy = slider_pos
         sizex,sizey = size
@@ -1484,7 +1500,8 @@ class slider:
         cx,cy = get_center(self.center,self.scale,self.pos,size=self.size)
         pygame.draw.rect(self.display, self.tcolor, (cx+screenx+x+spx-sizex/2,cy+screeny+y+spy-sizey/2,sizex,sizey))
         if int(self.value*100) == int(self.value*10)*10 and self.value != self.p_value:
-            pygame.mixer.Sound.play(self.sound)
+            if self.audio:
+                pygame.mixer.Sound.play(self.sound)
 
         self.p_value = self.value
 
@@ -1497,7 +1514,7 @@ def button_list(theme,pos,size,options,max,Input):
 
 
 class window:
-    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=False, max=False):
+    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(0,0), max=(0,0)):
         self.theme = theme
         self.display = theme.display
         self.screen = theme.screen
@@ -1507,14 +1524,8 @@ class window:
         self.size = size
         self.name = name
         self.resizeable =resizeable
-        if min == False:
-            self.min = (0,0)
-        else:
-            self.min = min
-        if max == False:
-            self.max = self.screen
-        else:
-            self.max = max
+        self.min = min
+        self.max = max
         self.resizing = False
         self.smx = 0
         self.smy = 0
@@ -1528,7 +1539,6 @@ class window:
         size_x, size_y = self.size
         x2, y2 = size_x * self.scale, size_y * self.scale
         mx, my, mb = self.Input.mouse()
-        old_x,old_y = self.pos
 
         if self.resizeable:
             if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
@@ -1655,18 +1665,11 @@ class window:
             if mb == 0 and self.resizing:
                 self.resizing = False
             self.smx, self.smy = mx, my
-            if self.min[0] > self.size[0]:
-                self.size = (self.min[0],self.size[1])
-                self.pos = (old_x,self.pos[1])
-            if self.max[0] < self.size[0]:
-                self.size = (self.max[0], self.size[1])
-                self.pos = (old_x, self.pos[1])
-            if self.min[1] > self.size[1]:
-                self.size = (self.size[0],self.min[1])
-                self.pos = (self.pos[0],old_y )
-            if self.max[1] < self.size[1]:
-                self.size = (self.size[0], self.max[1])
-                self.pos = (self.pos[0], old_y)
+
+            if self.min[0] > self.size[0]: self.size = (self.min[0],self.size[1])
+            if self.max[0] < self.size[0]: self.size = (self.max[0], self.size[1])
+            if self.min[1] > self.size[1]: self.size = (self.size[0],self.min[1])
+            if self.max[1] < self.size[1]: self.size = (self.size[0], self.max[1])
 
 
 
@@ -1679,3 +1682,48 @@ class window:
         if button(self.theme, (x+sx/2 - 7.5, y - sy / 2 + 7.5),(15,15),"X",self.Input):
             action = "close"
         return x, y, sx, sy, action
+
+class analog_stick:
+    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(0,0), max=(0,0)):
+        self.theme = theme
+        self.display = theme.display
+        self.screen = theme.screen
+        self.scale = theme.scale
+        self.Input = Input
+        self.pos = pos
+        self.size = size
+        self.name = name
+        self.resizeable =resizeable
+        self.min = min
+        self.max = max
+        self.resizing = False
+        self.smx = 0
+        self.smy = 0
+        self.dir = 0
+        self.x = 128
+        self.y = 128
+
+class display_window:
+    def __init__(self, theme, pos, size):
+        self.theme = theme
+        self.display = theme.display
+        self.screen = theme.screen
+        self.scale = theme.scale
+        self.pos = pos
+        self.size = size
+        size_x, size_y = self.size
+        x2, y2 = size_x * self.scale, size_y * self.scale
+        self.surface = pygame.Surface((x2-4, y2-4))
+        self.surface.fill((0,0,0))
+
+    def update(self):
+        sx, sy = self.screen
+        x, y = self.pos
+        x, y = sx + x * self.scale, sy + y * self.scale
+        size_x, size_y = self.size
+        x2, y2 = size_x * self.scale, size_y * self.scale
+        x = x - x2 / 2
+        y = y - y2 / 2
+        box(self.theme, self.pos, self.size)
+        self.display.blit(self.surface, (x+2, y+2))
+        self.surface.fill((0,0,0))

@@ -1049,7 +1049,7 @@ class Connect_4:
             self.yoff = (self.theme.height - 780 * self.scale) / 2
         if gui.button(self.theme, (0, 50), (100, 20), "Return to Game", self.Input):
             return "back"
-        if gui.button(self.theme, (0, 75), (100, 20), "Exit Game", self.Input):
+        if gui.button(self.theme, (0, 100), (100, 20), "Exit Game", self.Input):
             return "exit"
 
     def update_screen(self):
