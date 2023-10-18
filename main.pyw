@@ -11,7 +11,7 @@ import os
 import copy
 import PyChat as pc
 import traceback
-
+import ctypes
 
 def load_config():
     try:
@@ -106,7 +106,7 @@ pychat = False
 reset_screen = False
 reload_players = False
 check_settings = False
-resolutions = ("2560x1440","1920x1440","1920x1200","1920x1080","1680x1050","1600x1200","1600x1024","1600x900","1440x900","1366x768","1360x768","1280x1024","1280x960","1280x800","1280x768","1280x720","1152x864","1024x768","800x600")
+resolutions = ("3840x2160","1560x1600","2560x1440","1920x1440","1920x1200","1920x1080","1680x1050","1600x1200","1600x1024","1600x900","1440x900","1366x768","1360x768","1280x1024","1280x960","1280x800","1280x768","1280x720","1152x864","1024x768","800x600")
 data = None
 frame = 0
 n = Network()
@@ -117,6 +117,11 @@ alpha = 255
 #{"name": "player 1", "position": 1, "color1": [255, 0, 0], "color2": [0, 255, 0], "color3": [0, 0, 255], "scores": {}, "playtime": {}}
 
 if __name__ == "__main__":
+    try:
+         ctypes.windll.user32.SetProcessDPIAware()
+    except AttributeError:
+        pass
+
     config = load_config()
     theme = gui.Theme()
     theme.load_Theme(config)
@@ -285,16 +290,6 @@ if __name__ == "__main__":
 #main menu
 
             if not in_game:
-                if pychat:
-                    if not n.is_connected():
-                        n.connect()
-                        if not n.is_connected():
-                            pychat = False
-                            popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25* scale), (0, -current_h / (2 * scale) + 15), 2, 3, (300, 15), "Failed to connect to server")
-                    else:
-                        if chat.update(Input) == "close":
-                            pychat = False
-
                 if main_screen[-1] == "main_menu":
                     temp = theme.font
                     theme.font = pygame.font.SysFont("impact", 30 * scale)
@@ -424,7 +419,7 @@ if __name__ == "__main__":
                         gui.box(theme,(0,0),(200,screen[1]/scale))
                         if gui.button(theme,(-25,(screen[1]/scale)/2-10),(150,20),"New Server",Input):
                             sub_screen.append("create_server")
-                            multiplayerGames = ["Snake"] # ["Dot Game","Snake","Connect 4","Flappy Bird"]
+                            multiplayerGames = ["Snake","Connect 4"] # ["Dot Game","Snake","Flappy Bird"]
 
                         if gui.button(theme,(75,(screen[1]/scale)/2-10),(50,20),"Refresh",Input):
                             n.send({"packet": "get_servers"})
@@ -456,6 +451,9 @@ if __name__ == "__main__":
                             pos += 25
                             if pos > y+sy/2-20:
                                 break
+                        if gui.button(theme, (x,y+sy/2-30 ), (sx, 20), "Player List", Input):
+                            n.send({"packet": "get_data", "server": server_ID ,"key":"clients"})
+                            sub_screen.append("player_list")
                         if gui.button(theme, (x,y+sy/2-10 ), (sx, 20), "join", Input):
                             n.send({"packet": "join_server", "server": server_ID ,"name":player.name})
                         data = n.receive("join_server")
@@ -463,8 +461,20 @@ if __name__ == "__main__":
                             clients = data["clients"]
                             sub_screen[-1] = f"join_{server['Name']}"
 
+                        if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input) or button != None:
+                            sub_screen.pop()
 
-
+                    elif sub_screen[-1] == "player_list":
+                        x, y, sx, sy, button = properties_window.update()
+                        data = n.receive("clients")
+                        if data != None:
+                            clients = data["data"]
+                        pos = y - sy / 2 + 30
+                        for name in clients:
+                            gui.lable(theme, (x, pos), clients[name], in_box=True, size=(100, 20))
+                            pos += 25
+                            if pos > y+sy/2-20:
+                                break
                         if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input) or button != None:
                             sub_screen.pop()
 
@@ -491,14 +501,26 @@ if __name__ == "__main__":
                         sub_screen.pop()
                         sub_screen.pop()
 
+                    elif sub_screen[-1] == "join_Connect 4":
+                        game = multiplayer_games.Connect_4(theme, Input, Players,n)
+                        game.setup_ = True
+                        game.join_ = True
+                        mpgame = True
+                        game.clients = clients
+                        game.server_ID = server_ID
+                        n.send({"packet": "get_data", "server": server_ID, "key": "server_info"})
+                        in_game = True
+                        sub_screen.pop()
+                        sub_screen.pop()
+
                     elif sub_screen[-1] == "Snake":
                         game = multiplayer_games.Snake(theme, Input, Players,n)
                         in_game = True
                         mpgame = True
                         sub_screen.pop()
 
-                    elif sub_screen[-1] == "Dot Game":
-                        game = multiplayer_games.Dot_Game(theme, Input, Players,n)
+                    elif sub_screen[-1] == "Connect 4":
+                        game = multiplayer_games.Connect_4(theme, Input, Players,n)
                         in_game = True
                         mpgame = True
                         sub_screen.pop()
@@ -886,6 +908,17 @@ if __name__ == "__main__":
                         sub_screen.pop()
                         theme.sounds(volume=volume)
 
+            if pychat:
+                if not n.is_connected():
+                    n.connect()
+                    if not n.is_connected():
+                        pychat = False
+                        popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25 * scale), (0, -current_h / (2 * scale) + 15), 2,
+                                           3, (300, 15), "Failed to connect to server")
+                else:
+                    if chat.update(Input) == "close":
+                        pychat = False
+
         except Exception as e:
             traceback.print_exc()
             in_game = False
@@ -967,8 +1000,9 @@ if n.is_connected():
         if time.perf_counter() > timeout:
             print(print("failed to disconnect from the server Error: packet timeout"))
             break
-    if  data["packet"] == "disconnected":
+    if data != None:
         print("Disconnected form server")
+
 
 
 for player in Players:
