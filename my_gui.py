@@ -322,6 +322,7 @@ class Theme:
                 Fonts.append(font)
             self.font = pygame.font.SysFont(Fonts[0], Theme["Fonts"][Fonts[0]] * self.scale)
             self.font_size = Theme["Fonts"][Fonts[0]]
+            self.Sounds = {}
             for sound in Theme["Sounds"]:
                 try:
                     self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")

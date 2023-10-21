@@ -969,7 +969,9 @@ if __name__ == "__main__":
                 sub_screen.append("main")
             else:
                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25), (0, -current_h / (2 * scale) + 15), 2, 10, (-1, 15),f"Error in {main_screen[-1],sub_screen[-1]}. Error : {e}")
-                pygame.mixer.Sound.play(theme.sounds("Errors")[random.randrange(0,len(theme.sounds("Errors")))])
+                print(theme.sounds("Errors"))
+                if theme.sounds("Errors") != None:
+                    pygame.mixer.Sound.play(theme.sounds("Errors")[random.randrange(0,len(theme.sounds("Errors")))])
                 if sub_screen == "main":
                     main_screen.pop()
                 else:
