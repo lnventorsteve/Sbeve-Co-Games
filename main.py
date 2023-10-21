@@ -1,3 +1,4 @@
+import random
 import time
 import pygame
 from Network import Network
@@ -341,7 +342,7 @@ if __name__ == "__main__":
                                 popUp = gui.pop_up(theme,(0,-current_h/(2*scale)-25),(0,-current_h/(2*scale)+15),2,3,(300,15),"Failed to connect to server!")
 
                         if gui.button(theme, (0, 25), (100, 20), "Local Games",Input):
-                            localGames = ["Game of Life","Dot Game","Snake","Connect 4","Flappy Bird"]#,"Tic Tac Toe","Hangman","Cookie Clicker",
+                            localGames = ["Game of Life","Dot Game","Snake","Connect 4","Flappy Bird","Centipede"]#,"Tic Tac Toe","Hangman","Cookie Clicker",
                             main_screen.append("local_games")
 
 
@@ -432,6 +433,10 @@ if __name__ == "__main__":
                         game = local_games.bird(theme,Input,Players)
                         in_game = True
                         config["target_fps"] = game_fps
+                        sub_screen.pop()
+                    elif sub_screen[-1] == "Centipede":
+                        game = local_games.Centipede(theme,player,Input)
+                        in_game = True
                         sub_screen.pop()
                     else:
                         if main_screen[-2] =="resume":
@@ -862,7 +867,8 @@ if __name__ == "__main__":
                             if int(gui.get_text(scale_box)) < 10:
                                 scale = int(gui.get_text(scale_box))
                         else:
-                            popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25),(0, -current_h / (2 * scale) + 15), 2, 10, (-1, 15),f"Try again Djoman")
+                            popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25),(0, -current_h / (2 * scale) + 15), 2, 10, (-1, 15),f"Try again, Djoman")
+                            continue
                         w,h = gui.get_text(screen_size).split("x")
                         current_w, current_h = int(w),int(h)
                         screen_mode = gui.get_text(window_mode)
@@ -963,6 +969,7 @@ if __name__ == "__main__":
                 sub_screen.append("main")
             else:
                 popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25), (0, -current_h / (2 * scale) + 15), 2, 10, (-1, 15),f"Error in {main_screen[-1],sub_screen[-1]}. Error : {e}")
+                pygame.mixer.Sound.play(theme.sounds("Errors")[random.randrange(0,len(theme.sounds("Errors")))])
                 if sub_screen == "main":
                     main_screen.pop()
                 else:
@@ -1043,5 +1050,6 @@ if n.is_connected():
 for player in Players:
     player.save_player()
 
+pygame.quit()
 time.sleep(0.2)
 print("done")

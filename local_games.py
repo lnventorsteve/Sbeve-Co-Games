@@ -14,6 +14,13 @@ def get_player_names(Players):
         names.append(player.name)
     return names
 
+def clamp(value,max,min):
+    if value > max:
+        return max
+    if value < min:
+        return min
+    return value
+
 class Game_of_Life:
     def __init__(self,theme,Input,Players):
         self.theme = theme
@@ -1187,7 +1194,50 @@ class Connect_4:
     def exit(self):
         pass
 
+class Centipede:
+    def __init__(self,theme,Player,Input):
+        self.theme = theme
+        self.display = theme.display
+        self.Input = Input
+        self.setup_ = False
+        self.join_ = False
+        self.grid_x = 30
+        self.grid_y = 24
+        self.player = Player
+        self.pos = (self.grid_x/2,self.grid_y)
 
+    def load(self):
+        pass
+
+    def setup(self):
+        if gui.button(self.theme, (0, 50), (100, 20), "Play", self.Input):
+            self.setup_ = True
+
+    def settings(self):
+        pass
+
+    def update(self):
+        x,y = self.pos
+        for key in self.Input.Keys_pressed:
+            if key == 119:
+                y-=1
+            if key == 97:
+                x+=1
+            if key == 115:
+                y+=1
+            if key == 100:
+                x-=1
+        x = clamp(x,self.grid_x,0)
+        y = clamp(y, self.grid_y, 0)
+        self.pos = (x,y)
+        print(self.pos)
+
+    def save_exit(self):
+        pass
+
+    def exit(self):
+        if gui.button(self.theme, (0, 75), (100, 20), "Exit Game", self.Input):
+            return "exit"
 
 
 

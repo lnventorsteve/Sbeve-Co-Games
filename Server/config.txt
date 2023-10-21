@@ -1,2 +1,2 @@
-server ip = 192.168.100.100
+server ip = 192.168.0.150
 server port = 25562

@@ -295,8 +295,18 @@ class Theme:
             self.font_size = Theme["Fonts"][Fonts[0]]
             self.font_name = Fonts[0]
             for sound in Theme["Sounds"]:
-                self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")
-                self.Sounds[sound].set_volume(Theme["Sounds"][sound]["volume"])
+                print(Theme["Sounds"])
+                try:
+                    self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")
+                    self.Sounds[sound].set_volume(Theme["Sounds"][sound]["volume"])
+                except:
+                    self.Sounds[sound] = []
+                    print(Theme['Sounds'][sound])
+                    for name in Theme['Sounds'][sound]['names']:
+                        temp = pygame.mixer.Sound(f"{self.path}/sounds/{name}")
+                        temp.set_volume(Theme["Sounds"][sound]["volume"])
+                        self.Sounds[sound].append(temp)
+                print(type(self.Sounds[sound]))
             self.sound_info = Theme["Sounds"]
             self.Colors = Theme["Colors"]
             self.tcolor = Theme["Colors"]['Text color']
@@ -313,8 +323,16 @@ class Theme:
             self.font = pygame.font.SysFont(Fonts[0], Theme["Fonts"][Fonts[0]] * self.scale)
             self.font_size = Theme["Fonts"][Fonts[0]]
             for sound in Theme["Sounds"]:
-                self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")
-                self.Sounds[sound].set_volume(Theme["Sounds"][sound]["volume"])
+                try:
+                    self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")
+                    self.Sounds[sound].set_volume(Theme["Sounds"][sound]["volume"])
+                except:
+                    self.Sounds[sound] = []
+                    for name in Theme['Sounds'][sound]['names']:
+                        temp = pygame.mixer.Sound(f"{self.path}/sounds/{name}")
+                        temp.set_volume(Theme["Sounds"][sound]["volume"])
+                        self.Sounds[sound].append(temp)
+                print(type(self.Sounds[sound]))
             self.sound_info = Theme["Sounds"]
             self.Colors = Theme["Colors"]
             self.tcolor = Theme["Colors"]['Text color']
@@ -371,20 +389,22 @@ class Theme:
 
         return (self.tcolor,self.bcolor,self.bgcolor)
 
-    def sounds(self, type = False, sound = False, volume = False):
-        if type != False:
-            if type in self.Sounds:
+    def sounds(self, name = False, sound = False, volume = False):
+        if name != False:
+            if name in self.Sounds:
                 if sound != False:
-                    self.Sounds[type] = pygame.mixer.Sound("sounds/" + sound)
-                    self.sound_info[type]["name"] = sound
+                    self.Sounds[name] = pygame.mixer.Sound("sounds/" + sound)
+                    self.sound_info[name]["name"] = sound
                 if volume != False:
-                    self.Sounds[type].set_volume(volume/100)
-                    self.sound_info[type]["volume"] = volume
-                return self.Sounds[type]
+                    if type(self.Sounds[name]) != list:
+                        self.Sounds[name].set_volume(volume/100)
+                        self.sound_info[name]["volume"] = volume
+                return self.Sounds[name]
         else:
             if volume != False:
                 for sound in self.Sounds:
-                    self.Sounds[sound].set_volume((volume/100) * (self.sound_info[sound]["volume"]/100))
+                    if type(self.Sounds[sound]) != list:
+                        self.Sounds[sound].set_volume((volume/100) * (self.sound_info[sound]["volume"]/100))
             return self.Sounds
 
 
