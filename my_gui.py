@@ -295,18 +295,15 @@ class Theme:
             self.font_size = Theme["Fonts"][Fonts[0]]
             self.font_name = Fonts[0]
             for sound in Theme["Sounds"]:
-                print(Theme["Sounds"])
                 try:
                     self.Sounds[sound] = pygame.mixer.Sound(f"{self.path}/sounds/{Theme['Sounds'][sound]['name']}")
                     self.Sounds[sound].set_volume(Theme["Sounds"][sound]["volume"])
                 except:
                     self.Sounds[sound] = []
-                    print(Theme['Sounds'][sound])
                     for name in Theme['Sounds'][sound]['names']:
                         temp = pygame.mixer.Sound(f"{self.path}/sounds/{name}")
                         temp.set_volume(Theme["Sounds"][sound]["volume"])
                         self.Sounds[sound].append(temp)
-                print(type(self.Sounds[sound]))
             self.sound_info = Theme["Sounds"]
             self.Colors = Theme["Colors"]
             self.tcolor = Theme["Colors"]['Text color']
@@ -333,7 +330,6 @@ class Theme:
                         temp = pygame.mixer.Sound(f"{self.path}/sounds/{name}")
                         temp.set_volume(Theme["Sounds"][sound]["volume"])
                         self.Sounds[sound].append(temp)
-                print(type(self.Sounds[sound]))
             self.sound_info = Theme["Sounds"]
             self.Colors = Theme["Colors"]
             self.tcolor = Theme["Colors"]['Text color']
@@ -1560,7 +1556,7 @@ class window:
         size_x, size_y = self.size
         x2, y2 = size_x * self.scale, size_y * self.scale
         mx, my, mb = self.Input.mouse()
-
+        print("top",self.pos, self.size)
         if self.resizeable:
             if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
 #resize window <^v>
@@ -1627,6 +1623,7 @@ class window:
                         self.dir = 2
                     pygame.mouse.set_system_cursor(7)
 #move whole window
+
                 elif my < (y - y2 / 2)+15*self.scale and mx < x+x2/2 - 30*self.scale:
                     if mb == 1:
                         self.Input.clicked()
@@ -1680,18 +1677,18 @@ class window:
                     dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
                     self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
                     self.size = (self.size[0] - dmx, self.size[1] - dmy)
-
+            print("bottom", self.pos, self.size)
 
 
             if mb == 0 and self.resizing:
                 self.resizing = False
             self.smx, self.smy = mx, my
-
+            """
             if self.min[0] > self.size[0]: self.size = (self.min[0],self.size[1])
             if self.max[0] < self.size[0]: self.size = (self.max[0], self.size[1])
             if self.min[1] > self.size[1]: self.size = (self.size[0],self.min[1])
             if self.max[1] < self.size[1]: self.size = (self.size[0], self.max[1])
-
+            """
 
 
         x,y = self.pos
