@@ -7,7 +7,7 @@ import math
 import random
 import background
 import local_games
-
+#fix for god speed
 
 def get_player_names(Players):
     names = []

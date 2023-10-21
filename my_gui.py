@@ -1556,7 +1556,6 @@ class window:
         size_x, size_y = self.size
         x2, y2 = size_x * self.scale, size_y * self.scale
         mx, my, mb = self.Input.mouse()
-        print("top",self.pos, self.size)
         if self.resizeable:
             if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
 #resize window <^v>
@@ -1677,7 +1676,6 @@ class window:
                     dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
                     self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
                     self.size = (self.size[0] - dmx, self.size[1] - dmy)
-            print("bottom", self.pos, self.size)
 
 
             if mb == 0 and self.resizing:
