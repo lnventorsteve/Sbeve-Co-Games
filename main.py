@@ -13,7 +13,6 @@ import copy
 import PyChat as pc
 import traceback
 import ctypes
-import my_3Dengine as my3d
 
 def load_config():
     try:
@@ -81,22 +80,6 @@ def get_position(player):
         return  100
     return player.position
 
-class RenderClass:
-    def __init__(self,screen_info):
-        self.RES = self.WIDTH, self.HEIGHT = screen_info[1][0]*2,screen_info[1][1]*2
-        self.H_WIDTH, self.H_HEIGHT = screen_info[1][0],screen_info[1][1]
-        self.screen = screen_info[0]
-
-    def get_object_from_file(self, filename):
-        vertex, faces = [], []
-        with open(filename) as f:
-            for line in f:
-                if line.startswith('v '):
-                    vertex.append([float(i) for i in line.split()[1:]] + [1])
-                elif line.startswith('f'):
-                    faces_ = line.split()[1:]
-                    faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
-        return my3d.Object3D(self, vertex, faces)
 
 #init pygame
 pygame.init()
@@ -181,6 +164,9 @@ if __name__ == "__main__":
 
     Players = []
     numofplayers = 0
+    if not os.path.exists("playerdata"):
+        os.mkdir(f"{os.getcwd()}/playerdata")
+
     if os.listdir("playerdata") == []:
         new_player = Player_class()
         pos = -screen[1] / scale/2+35
@@ -194,16 +180,16 @@ if __name__ == "__main__":
         pos += 25
         sub_screen.append("Force New player")
 
+    if os.path.exists("playerdata"):
+        for each in os.listdir("playerdata"):
+            Players.append(Player_class())
+            Players[numofplayers].load_player(each)
+            numofplayers += 1
+        Players.sort(key=get_position)
 
-    for each in os.listdir("playerdata"):
-        Players.append(Player_class())
-        Players[numofplayers].load_player(each)
-        numofplayers += 1
-    Players.sort(key=get_position)
-
-    for each in Players:
-        if each.position == 1:
-            player = each
+        for each in Players:
+            if each.position == 1:
+                player = each
 
 
 

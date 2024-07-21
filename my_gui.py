@@ -4,7 +4,6 @@ import os
 import time
 
 import pygame
-import win32clipboard
 
 pygame.init()
 default_font = pygame.font.SysFont(pygame.font.get_default_font(), 24)

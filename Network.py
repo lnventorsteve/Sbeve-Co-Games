@@ -10,7 +10,7 @@ from datetime import datetime
 class Network:
     def __init__(self):
         #self.server = "142.161.10.140"
-        self.server = "216.122.139.182"
+        self.server = "0.0.0.0"
         self.port = 25562
         self.addr = (self.server,self.port)
         self.data = []
