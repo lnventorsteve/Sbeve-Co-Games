@@ -670,43 +670,35 @@ def update(self, input, maxTextLength = False):
                 print(self.pointer)
             # ctrl-v
             elif key == 118 and "CTRL" in mods:
-                try:
-                    win32clipboard.OpenClipboard()
-                    data = win32clipboard.GetClipboardData()
-                    win32clipboard.CloseClipboard()
-                    self.text = text1 + data + text2
-                except:
-                    print("What is this bullshit")
-
+                print("ctrl-v")
+                data = pyperclip.paste()
+                self.text = text1 + data + text2
             # ctrl-c
             elif key == 99 and "CTRL" in mods:
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.SetClipboardText(self.text)
-                win32clipboard.CloseClipboard()
+                print("ctrl-c")
+                pyperclip.copy(self.text)
             # ctrl-x
             elif key == 120 and "CTRL" in mods:
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.SetClipboardText(self.text)
-                win32clipboard.CloseClipboard()
+                print("ctrl-x")
+                pyperclip.copy(self.text)
                 self.text = ""
             # ctrl-delete
             elif key == 127 and "CTRL" in mods:
                 self.text = ""
 
-        # add key to text
-            for key  in input.unicode:
-                textX, textY = self.font.size(self.text)
-                if maxTextLength != False:
-                    if textX + 20 < maxTextLength:
-                        text1 = text1 + key
-                        textX, textY = self.font.size(text1+ text2)
-                        if textX + 10 > maxTextLength:
-                            text1 = text1[:-1]
-                        self.text = text1 + text2
-                else:
-                    self.text = text1 + key + text2
+            # add key to text
+            else:
+                for key  in input.unicode:
+                    textX, textY = self.font.size(self.text)
+                    if maxTextLength != False:
+                        if textX + 20 < maxTextLength:
+                            text1 = text1 + key
+                            textX, textY = self.font.size(text1+ text2)
+                            if textX + 10 > maxTextLength:
+                                text1 = text1[:-1]
+                            self.text = text1 + text2
+                    else:
+                        self.text = text1 + key + text2
 
 
 
@@ -915,22 +907,26 @@ class color_picker:
         self.name = str(name)
         self.center = center
         self.text_center = "center"
-        sx, sy = self.screen
-        scale = self.scale
-        px, py = pos
+        self.update()
+
+    def update(self):
+        sx, sy = self.theme.screen_info()[1]
+        scale = self.theme.screen_info()[2]
+        px, py = self.pos
         px, py = px * scale, py * scale
         x, y = sx + px, sy + py
-        sx, sy = size
+        sx, sy = self.size
         sx, sy = sx * scale, sy * scale
         self.Spectrum = pygame.transform.scale(pygame.image.load("images/spectrum_chart.jpg"), (sx-4, sy-4))
 
-        if center == "center":
+        if self.center == "center":
             x, y = x - sx / 2, y - sy / 2
-        elif center == "left":
+        elif self.center == "left":
             x, y = x - sx / 2, y
         self.rect = (x+2, y+2)
 
     def get_color(self, input):
+        self.update()
         box(self.theme, self.pos, self.size)
         self.display.blit(self.Spectrum, self.rect)
         px, py = self.pos

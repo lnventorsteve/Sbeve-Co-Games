@@ -335,14 +335,6 @@ if __name__ == "__main__":
                         if gui.button(theme, (0, 50), (100, 20), "Settings", Input):
                             main_screen.append("settings")
 
-                        if gui.button(theme, (0, 75), (100, 20), "Test 3D engine", Input):
-                            Render = RenderClass(screen_info)
-                            Render.camera = my3d.Camera(Render , [-5, 6, -55])
-                            Render.projection = my3d.Projection(Render)
-                            Render.object = Render.get_object_from_file('models/t_34_obj.obj')
-                            Render.object.rotate_y(-math.pi / 4)
-                            Input.capture_mouse = True
-                            main_screen.append("3D engine")
 
                         if gui.button(theme, (0, 100), (100, 20), "Quit", Input):
                             done = True
