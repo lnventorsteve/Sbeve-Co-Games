@@ -6,7 +6,74 @@ import my_gui as gui
 import math
 import random
 import background
+from my_gui import Theme
 
+
+def load_config():
+    try:
+        with open("conf.json", "r") as conf:
+            config_ = json.loads(conf.read())
+        config = {}
+        config["scale"] = config_["scale"]
+        config["current_w"], config["current_h"] = config_["screen size"]
+        config["screen mode"] = config_["screen mode"]
+        config['main_display'] = config_["main_display"]
+        config['theme'] = config_["theme"]
+        config["volume"] = config_["volume"]
+        config["target_fps"] = config_["target_fps"]
+        return config
+    except:
+        config = {}
+        config["current_w"], config["current_h"] = 1920,1080
+        config["scale"] = 2
+        config["screen mode"] = "Windowed"
+        config['main_display'] = 0
+        config['theme'] = "Default theme"
+        config["volume"] = 100
+        config["target_fps"] = 20
+        return config
+
+class Player_class:
+    def __init__(self):
+        self.name = "No Name"
+        self.position = 0
+        self.color1 = (255, 0, 0)
+        self.color2 = (0, 255, 0)
+        self.color3 = (0, 0, 255)
+        self.highScores = {}
+        self.playTime = {}
+        self.currentGames = {}
+
+    def load_player(self,player):
+        with open(f"playerdata/{player}","r") as player_info:
+            player_info = json.loads(player_info.read())
+        self.name = player_info["name"]
+        self.position = player_info["position"]
+        self.color1 = player_info["color1"]
+        self.color2 = player_info["color2"]
+        self.color3 = player_info["color3"]
+        self.highScores = player_info["scores"]
+        self.playTime = player_info["playtime"]
+
+    def save_player(self):
+        with open(f"playerdata/{self.name}.json","w") as player_info:
+            dict_player = {}
+            dict_player["name"] = self.name
+            dict_player["position"] = self.position
+            dict_player["color1"] = self.color1
+            dict_player["color2"] = self.color2
+            dict_player["color3"] = self.color3
+            dict_player["scores"] = self.highScores
+            playtime = {}
+            for each in self.playTime:
+                playtime[each] = round(self.playTime[each],2)
+            dict_player["playtime"] = playtime
+            player_info.write(json.dumps(dict_player))
+
+def get_position(player):
+    if player.position == 0:
+        return  100
+    return player.position
 
 def get_player_names(Players):
     names = []
@@ -209,15 +276,16 @@ class Dot_Game:
         self.Players = Players
         self.scale = 50
         self.tcolor = theme.tcolor
-        self.scaleSettings = gui.lable_text(self.theme,(60,0),(100,15),"Scale",self.scale)
+        self.scaleSettings = gui.Label_text(self.theme,(60,0),(100,15),"Scale",self.scale)
         self.half = self.scale/2
         self.playagain = False
         self.setup_ = False
+        self.settings_ = False
         self.join_ = False
 
         self.players = []
         self.dots = []
-        self.lines= []
+        self.lines = []
         self.moves = {}
         self.colors = {}
         self.scores = {}
@@ -240,12 +308,12 @@ class Dot_Game:
         self.num_of_players_ui = gui.multiple_choice_input(theme,(60,-50),(100,15),"Num of players?",len(self.players),range(len(self.players)+1)[1:],5)
 
     def setup(self):
-        gui.lable(self.theme,(-60,-100),"Grid Size", in_box=True, size = (100,15))
+        gui.Label(self.theme,(-60,-100),"Grid Size", in_box=True, size = (100,15))
         self.X_ui.update(self.Input)
         self.Y_ui.update(self.Input)
 
         self.turn_ui.update(self.Input)
-        gui.lable(self.theme, (-60, -75), "Who goes first?", in_box=True, size=(100, 15))
+        gui.Label(self.theme, (-60, -75), "Who goes first?", in_box=True, size=(100, 15))
 
         self.num_of_players_ui.update(self.Input)
 
@@ -298,20 +366,24 @@ class Dot_Game:
     def settings(self):
         self.scaleSettings.update(self.Input)
         if gui.button(self.theme, (0, 50), (100, 20), "Exit Game", self.Input):
+            self.settings_ = False
             return "exit"
         if gui.button(self.theme, (0, 75), (100, 20), "Save and Exit", self.Input):
+            self.settings_ = False
             return "save exit"
         if gui.button(self.theme, (0, 100), (100, 20), "Apply", self.Input):
             if self.scaleSettings.text.isnumeric():
                 self.scale = int(self.scaleSettings.text)
                 self.half = self.scale/2
                 self.offset = (self.screen[0] - self.X * self.half, self.screen[1] - self.Y * self.half)
+                self.settings_ = False
                 return "back"
         return False
 
+
     def Draw_Game(self):
         self.display.fill((0, 0, 0))
-        gui.text(self.theme, (-self.screen[0]/self.theme.scale, self.screen[1]/self.theme.scale), f"{self.players[self.turn]}'s turn",center="bottom_left")
+        gui.Text(self.theme, (-self.screen[0]/self.theme.scale, self.screen[1]/self.theme.scale), f"{self.players[self.turn]}'s turn",center="bottom_left")
         offx, offy = self.offset
         _2 = self.scale/25
         _4 = self.scale/12.5
@@ -432,7 +504,7 @@ class Snake:
         self.last_frame = time.perf_counter() + 0.5
         self.next_frame = time.perf_counter()
 
-        self.scaleSettings = gui.lable_text(self.theme, (0, -75), (100, 20), "Scale", self.snake_scale)
+        self.scaleSettings = gui.Label_text(self.theme, (0, -75), (100, 20), "Scale", self.snake_scale)
         self.difficulty_gui = gui.multiple_choice_input(self.theme,(0,-25),(100,20),"Difficulty","Normal",["Easy++","Easy+","Easy","Normal","Hard","Expert","God"],5,pointer=1)
         self.width = gui.Text_Box(self.theme,(-25,-50),(47.5,20),"Width",default_text="Width")
         self.height = gui.Text_Box(self.theme,(25,-50),(47.5,20),"Height",default_text="Height")
@@ -593,9 +665,9 @@ class Snake:
 
     def setup(self):
         self.bg.update()
-        gui.lable(self.theme, (0, -self.screen[1] / self.scale + 75), "Snake", in_box=True, size=(150, 20))
+        gui.Label(self.theme, (0, -self.screen[1] / self.scale + 75), "Snake", in_box=True, size=(150, 20)).render()
         self.difficulty_gui.update(self.Input)
-        gui.text(self.theme, (-120, -50), "Grid Size", in_box=True, size=(100, 20))
+        gui.Text(self.theme, (-120, -50), "Grid Size", in_box=True, size=(100, 20)).render()
         self.scaleSettings.update(self.Input)
         self.width.update(self.Input)
         self.height.update(self.Input)
@@ -1240,16 +1312,37 @@ class Centipede:
             return "exit"
 
 
+class Suika:
+    def __init__(self,theme,Input,Players):
+        self.theme = theme
+        self.display = theme.display
+        self.Input = Input
+        self.Player = Players[0]
+        self.setup_ = True
+        self.settings_ = False
+        self.join_ = False
+        if "Suika" not in self.Player.highScores:
+            self.Player.highScores["Suika"] = 0
+
+
+    def update(self):
+        pass
+
+
+    def exit(self):
+        if gui.button(self.theme, (0, 75), (100, 20), "Exit Game", self.Input):
+            return "exit"
 
 
 
 class new_game:
-    def init(self,theme,Players,Input):
+    def __init__(self,theme,Input,Players):
         self.theme = theme
         self.display = theme.display
         self.Input = Input
         self.Players = Players
         self.setup_ = False
+        self.settings_ = False
         self.join_ = False
 
     def load(self):
@@ -1275,25 +1368,33 @@ class new_game:
 
 if __name__ == "__main__":
     pygame.init()
-    with open("conf.json", "r") as conf:
-        config = json.loads(conf.read())
-
-    scale = config["scale"]
-    zoom = config["zoom"]
-    current_w, current_h = config["screen size"]
-    fullscreen = config["mode"]
+    config = load_config()
+    theme: Theme = gui.Theme()
+    Input = gui.Input()
+    theme.load_Theme(config)
+    current_w = config["current_w"]
+    current_h = config["current_h"]
+    screen_mode = config["screen mode"]
     main_display = config["main_display"]
+    volume = config["volume"]
+    theme.sounds(volume=volume)
+    scale = config["scale"]
+    tcolor, bcolor, bgcolor = theme.colors()
+
 
     display_info = pygame.display.Info()
     print(current_w, current_h)
     display = pygame.display.set_mode((current_w, current_h),display=0)
     pygame.display.set_caption("Sbeve's Random Games")
-    game = dot_game(display,current_w,current_h)
+    screen = (current_w / 2, current_h / 2)
+    screen_info = (display, screen, scale)
+    theme.screen_info(screen_info)
+    player = Player_class()
 
-    mousedown = False
-    cursor = False
-    c_time  = time.perf_counter()
+    game = Suika(theme, Input, [player])
+    c_time = time.perf_counter()
     done = False
+    frame = 0
     while not done:
         mouse = (0, 0, 0)
         key = None
@@ -1301,31 +1402,26 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 done = True
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.VIDEORESIZE:
+                reset_screen = True
+                current_w = event.w
+                current_h = event.h
 
-            if not mousedown:
-                mx, my = pygame.mouse.get_pos()
-                mouse = (mx, my, event.button)
-                mousedown = True
-                in_text = False
-                print(mouse)
+            Input.get_input(event, frame)
+        Input.update(frame)
 
 
-        if event.type == pygame.MOUSEBUTTONUP and mousedown:
-            mousedown = False
-        if event.type == pygame.KEYDOWN:
-            key = event
-            if event.key == 27:
-                done = True
-
-        if time.perf_counter() >= c_time:
-            c_time = time.perf_counter()+0.5
-            cursor = not cursor
-            if cursor:
-                c = "_"
+        if not game.setup_:
+            game.setup()
+        else:
+            for key in Input.keys:
+                if key == 27:
+                    if not game.settings_:
+                        game.settings_ = True
+            if game.settings_:
+                action = game.settings()
             else:
-                c = ""
-
-        update(game, key, mouse, cursor)
-
+                game.update()
         pygame.display.update()
+
+        frame += 1

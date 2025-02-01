@@ -402,55 +402,125 @@ class Theme:
                         self.Sounds[sound].set_volume((volume/100) * (self.sound_info[sound]["volume"]/100))
             return self.Sounds
 
+class Box:
+    def __init__(self,theme, pos, size,border_color = False,background_color = False, resize = False):
+        self.theme = theme
+        self.display, self.screen, self.scale = theme.screen_info()
+        self.tcolor,self.bcolor,self.bgcolor = theme.colors()
+        if border_color != False:
+            self.bcolor = border_color
+        if background_color != False:
+            self.bgcolor = background_color
+
+        self.init_pos = pos
+        self.resize = resize
+        self.sx, self.sy = self.screen
+        self.px, self.py = self.pos = pos
+        self.x, self.y = self.sx + self.px * self.scale, self.sy + self.py * self.scale
+        self.x2, self.y2 = self.size = size
+        self.x2, self.y2 = self.x2 * self.scale, self.y2 * self.scale
+
+        self.rect = (self.x - self.x2 / 2, self.y - self.y2 / 2, self.x + self.x2 / 2, self.y + self.y2 / 2)
+
+    def update(self,window):
+        self.pos = (self.init_pos[0] + window.pos[0], self.init_pos[1] + window.pos[1])
+        if self.resize:
+            scale = (window.size[0] / window.init_size[0], window.size[1] / window.init_size[1])
+        else:
+            scale = (1, 1)
+
+        self.px, self.py = self.pos
+        self.x, self.y = self.sx + self.px * self.scale, self.sy + self.py * self.scale
+        self.x2, self.y2 = self.size
+        self.x2, self.y2 = self.x2 * self.scale * scale[0], self.y2 * self.scale * scale[1]
+
+    def render(self):
+        pygame.draw.rect(self.display, self.bcolor, (self.x - self.x2 / 2, self.y - self.y2 / 2, self.x2, self.y2))
+        pygame.draw.rect(self.display, self.bgcolor, ((self.x - self.x2 / 2) + self.theme.border,
+                                                      (self.y - self.y2 / 2) + self.theme.border,self.x2 - self.theme.border*2, self.y2 - self.theme.border*2))
 
 def box(theme, pos, size,border_color = False,background_color = False):
     display, screen, scale = theme.screen_info()
-    tcolor,bcolor,bgcolor = theme.colors()
+    tcolor, bcolor, bgcolor = theme.colors()
     if border_color != False:
         bcolor = border_color
     if background_color != False:
         bgcolor = background_color
     sx, sy = screen
-    px, py = pos
+    px, py = pos = pos
     x, y = sx + px * scale, sy + py * scale
-    x2, y2 = size
+    x2, y2 = size = size
     x2, y2 = x2 * scale, y2 * scale
+
     pygame.draw.rect(display, bcolor, (x - x2 / 2, y - y2 / 2, x2, y2))
-    pygame.draw.rect(display, bgcolor, ((x - x2 / 2) + theme.border, (y - y2 / 2) + theme.border,
-                                        x2 - theme.border*2, y2 - theme.border*2))
+    pygame.draw.rect(display, bgcolor, ((x - x2 / 2) + theme.border,
+                                                  (y - y2 / 2) + theme.border,
+                                                  x2 - theme.border * 2, y2 - theme.border * 2))
 
     return (x - x2 / 2, y - y2 / 2, x + x2 / 2, y + y2 / 2)
 
-def text(theme, pos, text, in_box=False, size=False, text_color = False
-         ,border_color = False,background_color = False,  center = "center"
-         ,cut_dir = False):
-    display, screen, scale = theme.screen_info()
-    tcolor,bcolor,bgcolor = theme.colors()
-    font = theme.fonts()
-    if text_color != False:
-        tcolor = text_color
-    if border_color != False:
-        bcolor = border_color
-    if background_color != False:
-        bgcolor = background_color
-    if size == False:
-        size = (0,0)
-    sx, sy = screen
-    x, y = pos
-    x, y = sx + x * scale, sy + y * scale
-    tx, ty = font.size(str(text))
-    if in_box:
-        box(theme, pos, size,border_color,background_color)
-        while tx > size[0]*scale:
-            if cut_dir:
-                text = text[1:]
-            else:
-                text = text[:-1]
-            tx = font.size(str(text))[0]
 
-    text_text = font.render(str(text), True, tcolor)
-    display.blit(text_text, get_center(center,scale,(x-tx/2, y-ty/2),tx,ty,size))
-    return tx, ty
+class Text:
+    def __init__(self,theme, pos, text, in_box=False, size=False, text_color = False
+             ,border_color = False,background_color = False,  center = "center"
+             ,cut_dir = False, resize = False):
+        self.theme = theme
+        self.pos = pos
+        self.in_box = in_box
+        self.resize = resize
+        self.display, self.screen, self.scale = theme.screen_info()
+        self.tcolor,self.bcolor,self.bgcolor = theme.colors()
+        self.font = theme.fonts()
+        self.center = center
+
+
+        if text_color != False:
+            self.tcolor = text_color
+        if border_color != False:
+            self.bcolor = border_color
+        if background_color != False:
+            self.bgcolor = background_color
+        if size == False:
+            self.size = (0,0)
+        else:
+            self.size = size
+        sx, sy = self.screen
+        x, y = self.pos
+        self.x, self.y = sx + x * self.scale, sy + y * self.scale
+        self.init_pos = (self.x, self.y)
+        tx, ty = self.font.size(str(text))
+
+        if in_box:
+            self.box = Box(theme, self.pos, size, self.bcolor, self.bgcolor, resize=resize)
+            while tx > size[0] * self.scale:
+                if cut_dir:
+                    text = text[1:]
+                else:
+                    text = text[:-1]
+                tx = self.font.size(str(text))[0]
+        self.text = text
+        self.text_pos = (tx, ty)
+        self.tx, self.ty = tx, ty
+        self.text_text = self.font.render(str(text), True, self.tcolor)
+
+    def update(self,window):
+
+        if self.resize:
+            scale = (window.size[0] / window.init_size[0], window.size[1] / window.init_size[1])
+        else:
+            scale = (1, 1)
+
+        if self.in_box:
+            self.box.update(window)
+        print(scale)
+
+        self.x, self.y = (self.init_pos[0] * scale[0] + window.pos[0]*self.scale, self.init_pos[1] * scale[1] + window.pos[1]*self.scale)
+
+
+    def render(self):
+        if self.in_box:
+            self.box.render()
+        self.display.blit(self.text_text, get_center(self.center,self.scale,(self.x-self.tx/2, self.y-self.ty/2),self.tx,self.ty,self.size))
 
 def get_center(center,scale,pos,tx = 0,ty = 0,size = (0,0)):
     x,y = pos
@@ -529,38 +599,90 @@ def hover(theme, pos, size, input):
             return True
     return False
 
+class Button:
+    def __init__(self,theme, pos, size, text, input, resize = False):
+        self.display, self.screen, self.scale = theme.screen_info()
+        self.tcolor,self.bcolor,self.bgcolor = theme.colors()
+        self.sound = theme.sounds("button")
+        self.pos = pos
+        self.size = size
+        self.input = input
+        self.resize = resize
+        self.name = text
+        self.text = Text(theme, pos, text, True, size)
+        self.state = False
+
+    def update(self,window):
+        pos = window.pos
+        self.text.update(window)
+        if self.resize:
+            scale = (window.size[0]/window.init_size[0],window.size[1]/window.init_size[1])
+        else:
+            scale = (0,0)
+
+        sx, sy = self.screen
+        x, y = self.pos
+        x, y = pos[0]+sx + x * self.scale, pos[1]+ sy + y * self.scale
+        x2, y2 = (self.size[0]*scale[0],self.size[1]*scale[1])
+        x2, y2 = x2* self.scale, y2* self.scale
+        mx, my, mb = self.input.mouse()
+        if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
+            r,g,b = self.bgcolor
+            if r - 16 < 0: r = 0
+            else: r -= 16
+            if g - 16 < 0: g = 0
+            else: g -= 16
+            if b - 16 < 0: b = 0
+            else: b -= 16
+            self.bgcolor = r, g, b
+            if mb == 1:
+                if self.sound != False:
+                    pygame.mixer.Sound.play(self.sound)
+                input.clicked()
+                self.state = True
+                return self.name
+        self.text.bgcolor = self.bgcolor
+        self.state = False
+
+    def render(self):
+        self.text.render()
 
 def button(theme, pos, size, _text, input):
+    theme = theme
     display, screen, scale = theme.screen_info()
-    tcolor,bcolor,bgcolor = theme.colors()
+    tcolor, bcolor, bgcolor = theme.colors()
     sound = theme.sounds("button")
-
     sx, sy = screen
     x, y = pos
     x, y = sx + x * scale, sy + y * scale
     x2, y2 = size
-    x2, y2 = x2* scale, y2* scale
+    x2, y2 = x2 * scale, y2 * scale
     mx, my, mb = input.mouse()
     if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
-        r,g,b = bgcolor
-        if r - 16 < 0: r = 0
-        else: r -= 16
-        if g - 16 < 0: g = 0
-        else: g -= 16
-        if b - 16 < 0: b = 0
-        else: b -= 16
+        r, g, b = bgcolor
+        if r - 16 < 0:
+            r = 0
+        else:
+            r -= 16
+        if g - 16 < 0:
+            g = 0
+        else:
+            g -= 16
+        if b - 16 < 0:
+            b = 0
+        else:
+            b -= 16
         bgcolor = r, g, b
         if mb == 1:
             if sound != False:
                 pygame.mixer.Sound.play(sound)
             input.clicked()
             return True
-    text(theme, pos, _text, True, size, background_color = bgcolor)
+    Text(theme, pos, _text, True, size, background_color=bgcolor).render()
     return False
 
-
 class Text_Box:
-    def __init__(self, theme, pos, size, text, text_center = "center" , center="center", in_box=True, default_text = "", resizeable = False):
+    def __init__(self, theme, pos, size, text, text_center = "center" , center="center", in_box=True, default_text = "", resizeable = False, window = None):
         self.theme = theme
         self.tcolor, self.bcolor, self.bgcolor = theme.colors()
         self.sound = theme.sounds("button")
@@ -570,7 +692,11 @@ class Text_Box:
         self.name = ""
         self.default_text = default_text
         self.text = str(text)
-        self.pos = pos
+        self.start_pos = pos
+        if window is not None:
+            self.pos = window.pos[0]+pos[0],window.pos[1]+pos[1]
+        else:
+            self.pos = pos
         self.size = size
         self.font = theme.fonts()
         self.pointer = 0
@@ -578,8 +704,12 @@ class Text_Box:
         self.center = center
         self.text_center = text_center
         self.resizeable = resizeable
+        self.window = window
 
     def update(self, input, maxTextLength = False):
+        if self.window is not None:
+            self.pos = self.window.pos[0]+self.start_pos[0],self.window.pos[1]+self.start_pos[1]
+
         update(self, input, maxTextLength)
 
     def get_text(self):
@@ -705,7 +835,7 @@ def update(self, input, maxTextLength = False):
         _text = self.text
         textX, textY = self.font.size(_text)
         textOffset = self.font.size(self.text[:-len(_text)])
-        text(self.theme, self.pos, _text, self.in_box,self.size, background_color=bgcolor,cut_dir = True, center = self.center)
+        Text(self.theme, self.pos, _text, self.in_box,self.size, background_color=bgcolor,cut_dir = True, center = self.center).render()
 
         if input.cursor():
             t1x, t1y = self.font.size(text1)
@@ -719,10 +849,6 @@ def update(self, input, maxTextLength = False):
         if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2 and mb == 1:
             clicked = True
             mx = mx-self.screen[0] - centerX*self.scale
-            print(mx)
-
-
-
     else:
         _text = self.text
         tx, ty = self.font.size(_text)
@@ -730,7 +856,7 @@ def update(self, input, maxTextLength = False):
             while tx + 10 > x2:
                 _text = _text[1:]
                 tx, ty = self.font.size(_text)
-        text(self.theme, (centerX,centerY), _text, self.in_box,self.size, background_color=bgcolor)
+        Text(self.theme, (centerX,centerY), _text, self.in_box,self.size, background_color=bgcolor).render()
 
 
 def get_text(self):
@@ -742,7 +868,7 @@ def change_text(self, text):
     self.text = str(text)
     return str(p_text)
 
-
+"""
 def graph(theme, pos, size, values, name):
     display, screen, scale = theme.screen_info()
     tcolor,bcolor,bgcolor = theme.colors()
@@ -833,40 +959,41 @@ def multi_graph(theme, pos, size, time, values, name):
                                  ((gx - (ppx * (x2 / max_time))), (gy - ppy - 2)), 2)
             p_point = (time[-p_time - 1], py)
             p_time -= 1
+"""
+
+class ValueLabel:
+    def __init__(self,theme, pos, value, name, center="center", in_box=False, size=False, text_color = False
+             ,border_color = False, background_color = False):
+        name = str(value) + str(name)
+        self.text = Text(theme, pos, name, in_box, size, center=center, text_color = text_color
+             ,border_color = border_color, background_color = background_color)
+    def render(self):
+        self.text.render()
+
+class LabelValue:
+    def __init__(self,theme, pos, name, value, center="center", in_box=False, size=False, fixed = True, text_color = False
+             ,border_color = False,background_color = False):
+        name = str(name) + str(value)
+        self.text = Text(theme, pos, name, in_box, size, center=center, text_color = text_color
+             ,border_color = border_color, background_color = background_color)
+
+    def render(self):
+        self.text.render()
+
+class Label:
+    def __init__(self,theme, pos, name, center="center", in_box=False, size=False, fixed = True, text_color = False
+             ,border_color = False,background_color = False, resize = False):
+        name = str(name)
+        self.text = Text(theme, pos, name, in_box, size, center=center, text_color = text_color
+             ,border_color = border_color, background_color = background_color,resize = resize)
+    def update(self,window):
+        self.text.update(window)
 
 
+    def render(self):
+        self.text.render()
 
-def value_lable(theme, pos, value, name, center="center", in_box=False, size=False, text_color = False
-         ,border_color = False, background_color = False):
-    display, screen, scale = theme.screen_info()
-    font = theme.fonts()
-    name = str(value) + str(name)
-    tx,ty = font.size(name)
-    text(theme, pos, name, in_box, size, center=center, text_color = text_color
-         ,border_color = border_color, background_color = background_color)
-
-
-def lable_value(theme, pos, name, value, center="center", in_box=False, size=False, fixed = True, text_color = False
-         ,border_color = False,background_color = False):
-    display, screen, scale = theme.screen_info()
-    font = theme.fonts()
-    name = str(name) + str(value)
-    tx, ty = font.size(name)
-    text(theme, pos, name, in_box, size, center=center, text_color = text_color
-         ,border_color = border_color, background_color = background_color)
-
-def lable(theme, pos, name, center="center", in_box=False, size=False, fixed = True, text_color = False
-         ,border_color = False,background_color = False):
-    display, screen, scale = theme.screen_info()
-    font = theme.fonts()
-    name = str(name)
-    tx, ty = font.size(name)
-    text(theme, pos, name, in_box, size, center=center, text_color = text_color
-         ,border_color = border_color, background_color = background_color)
-
-
-
-class lable_text:
+class Label_text:
     def __init__(self, theme, pos, size, name, value, text_center="center",center="center",in_box=True, resizeable = False):
         self.theme = theme
         self.screen_info = theme.screen_info()
@@ -886,12 +1013,16 @@ class lable_text:
         self.center = center
         self.text_center = text_center
         self.resizeable = resizeable
+        posx, posy = pos
+        sizex, sizey = size
+        self.text_object = Text(self.theme,(posx-sizex-20,posy),self.name, self.in_box,self.size)
 
     def update(self, input):
-        posX,posY = self.pos
-        sizeX, sizeY = self.size
-        text(self.theme,(posX-sizeX-20,posY),self.name, self.in_box,self.size)
+        self.text_object.render()
         return update(self, input)
+
+    def render(self):
+        self.text_object.render()
 
 class color_picker:
     def __init__(self, theme, pos, size, name = "", color = (0,0,0), center="center"):
@@ -927,7 +1058,8 @@ class color_picker:
 
     def get_color(self, input):
         self.update()
-        box(self.theme, self.pos, self.size)
+        box = Box(self.theme, self.pos, self.size)
+        box.render()
         self.display.blit(self.Spectrum, self.rect)
         px, py = self.pos
         x, y = self.rect
@@ -947,10 +1079,9 @@ class color_picker:
             C = 255
         text_color = (C,C,C)
 
-        text(self.theme, (px - (sx + 20), py), self.name,True, self.size, text_color = text_color,background_color = self.color)
-
+        text = Text(self.theme, (px - (sx + 20), py), self.name,True, self.size, text_color = text_color,background_color = self.color)
+        text.render()
         return self.color
-
 
 class multiple_choice_input:
     def __init__(self, theme, pos, size, name, current_value, values, max_values, center="center", pointer=0):
@@ -989,25 +1120,25 @@ class multiple_choice_input:
             if len(self.values) > self.max_values:
                 values = self.values[self.pointer:self.max_values + self.pointer]
                 start_pos = len(values) * text_y
-                box_rect = box(self.theme, (px + 120, py), (100, (start_pos / 2) + 10))
+                box_rect = Box(self.theme, (px + 120, py), (100, (start_pos / 2) + 10))
                 pos = - math.floor(len(values) / 2)
                 if len(values) %2 == 0:
                     pos += 0.5
                 for each in values:
-                    text(self.theme, (px + 120, py + pos * (text_y / 2)), each)
+                    Text(self.theme, (px + 120, py + pos * (text_y / 2)), each).render()
                     pos += 1
             else:
                 start_pos = len(self.values) * text_y
-                box_rect = box(self.theme, (px + 120, py), (100, (start_pos / 2) + 10))
+                box_rect = Box(self.theme, (px + 120, py), (100, (start_pos / 2) + 10))
                 values = self.values
                 pos = - math.floor(len(self.values) / 2)
                 if len(self.values)%2 == 0:
                     pos += 0.5
                 for each in values:
-                    text(self.theme, (px + 120, py + pos * (text_y / 2)), each)
+                    Text(self.theme, (px + 120, py + pos * (text_y / 2)), each).render()
                     pos += 1
 
-            bx, by, bx2, by2 = box_rect
+            bx, by, bx2, by2 = box_rect.rect
 
             if bx < mx < bx2 and by < my < by2 and mb == 1:
                 input.clicked()
@@ -1042,9 +1173,8 @@ class multiple_choice_input:
                 self.selected = False
 
         size_x,size_y = self.size
-        text(self.theme, (px - (size_x+20), py), self.name,self.in_box,self.size)
-        text(self.theme, self.pos, self.text,self.in_box,self.size,background_color=bgcolor)
-
+        Text(self.theme, (px - (size_x+20), py), self.name,self.in_box,self.size).render()
+        Text(self.theme, self.pos, self.text,self.in_box,self.size,background_color=bgcolor).render()
 
 class pop_up:
     def __init__(self, theme, pos1, pos2, speed, delay, size, text, center="center"):
@@ -1131,7 +1261,7 @@ class pop_up:
 
 
             self.pos = (posx, posy)
-            text(self.theme, self.pos, self.text,True,self.size)
+            Text(self.theme, self.pos, self.text,in_box=True,size=self.size).render()
 
 
 
@@ -1171,7 +1301,7 @@ class file:
         if self.filters:
             box(self.theme, self.pos, self.size)
             text(self.theme, (px, -size_y / 2 + 12), "Filters")
-            text(self.theme, (px, py), "Sorry no filters are available.")
+            text(self.theme, (px, py), "Sorry no filters are avaiLabel.")
 
             if button(self.theme,(px+size_x/2-25, -size_y/2+12),(30,15),"Exit",self.Input):
                 self.Input.clicked()
@@ -1295,7 +1425,7 @@ class file:
 
                     top += row
                     if top > -size_y / 2 + row:
-                        if on_hover(self.theme,(line, top),(130,15),self.Input) or each == self.selected:
+                        if hover(self.theme,(line, top),(130,15),self.Input) or each == self.selected:
                             r,g,b = self.bgcolor
                             if r - 16 < 0: r = 0
                             else: r -= 16
@@ -1306,7 +1436,7 @@ class file:
                             bgcolor = r, g, b
                         else:
                             bgcolor = self.bgcolor
-                        lable(self.theme,(line, top),name, in_box = True,size = (130,15),background_color=bgcolor)
+                        Label(self.theme,(line, top),name, in_box = True,size = (130,15),background_color=bgcolor)
                         if hit_box(self.theme,(line, top),(130,15),self.Input):
                             self.selected = each
                             path = file_name.split("/")
@@ -1339,13 +1469,13 @@ class file:
                     x,y = pos = (0,0)
                     sx,sy = size = (200,100)
                     save_name = Text_Box(self.theme, (x, y), (sx / 1.2, 15), "", default_text = "File name" )
-                    lable(self.theme,(px+size_x/2-60,py+size_y/2-15),self.mode, in_box = True, size = (80,15))
+                    Label(self.theme,(px+size_x/2-60,py+size_y/2-15),self.mode, in_box = True, size = (80,15))
                     while True:
                         for event in pygame.event.get():
                             self.Input.get_input(event)
                         self.Input.update()
                         box(self.theme, pos, size)
-                        lable(self.theme,(x, y - sy / 2 + 20),"Save file as",in_box = True, size =  (sx / 2, 15))
+                        Label(self.theme,(x, y - sy / 2 + 20),"Save file as",in_box = True, size =  (sx / 2, 15))
                         save_name.update(self.Input)
                         if button(self.theme, (x - sx / 2 + sx / 4, y + sy / 2 - 20), (sx / 3, 15), "Cancel", self.Input):
                             break
@@ -1388,22 +1518,22 @@ def alert(theme, pos, size, name, button1, button2, Input, frame,  timer = False
             line += each + " "
             text_x, text_y = theme.font.size(line)
             if text_x > (sx * scale) / 2+20:
-                lable(theme, (x, y - sy / 2 + 15 + Pos), line)
+                Label(theme, (x, y - sy / 2 + 15 + Pos), line)
                 line = ""
                 Pos += 15
-        lable(theme, (x, y - sy / 2 + 15 + Pos), line)
+        Label(theme, (x, y - sy / 2 + 15 + Pos), line)
         if button(theme,(x-sx/2+sx/4,y+sy/2-20),(sx/3,15),button1,Input):
             return True
         if button(theme, (x+sx/2-sx/4, y+sy/2-20), (sx/3, 15),button2,Input):
             return False
         if timer != False:
-            lable(theme, (x, y+sy/2-20), round(timer - time.perf_counter()))
+            Label(theme, (x, y+sy/2-20), round(timer - time.perf_counter()))
         frame+=1
         pygame.display.update()
         time.sleep(0.05)
 
 
-class slider:
+class Slider:
     def __init__(self,theme,pos,size,direction,Input, value = 0, audio = False):
         self.Input = Input
         self.theme = theme
@@ -1425,9 +1555,9 @@ class slider:
     def update(self):
         sx,sy = self.size
         sx,sy = sx*self.scale,sy*self.scale
-        x,y = self.pos
-        screenx, screeny = self.screen
-        box(self.theme,self.pos,self.size)
+        self.x,self.y = self.pos
+        self.screenx, self.screeny = self.screen
+        self.box = Box(self.theme,self.pos,self.size)
         if hover(self.theme,self.pos,self.size,self.Input):
             self.value -= self.Input.scroll()/100
             if self.value > 1:
@@ -1440,14 +1570,14 @@ class slider:
             mx,my,mb = self.p_mouse = self.Input.mouse()
 
             if self.direction == "up":
-                self.value = 1-(my - y-sy/2)/sy
+                self.value = 1-(my - self.y-sy/2)/sy
                 print(self.value)
             elif self.direction == "right":
-                self.value = (mx - (screenx - x - sx/2))/sx
+                self.value = (mx - (self.screenx - self.x - sx/2))/sx
             elif self.direction == "down":
-                self.value = (my - y-sy/2)/sy
+                self.value = (my - self.y-sy/2)/sy
             elif self.direction == "left":
-                self.value = 1-(mx - (screenx - x - sx/2))/sx
+                self.value = 1-(mx - (self.screenx - self.x - sx/2))/sx
 
         if self.selected:
             mx,my,mb = self.Input.mouse()
@@ -1476,7 +1606,7 @@ class slider:
                 spy = sy/2-sx/4
             elif spy < -sy / 2 + sx/4:
                 spy = -sy / 2 + sx/4
-            slider_pos = (x,spy)
+            slider_pos = (self.x,spy)
             size = (sx,sx/2)
 
         elif self.direction  == "right":
@@ -1494,7 +1624,7 @@ class slider:
                 spy = sy/2-sx/4
             elif spy < -sy / 2 + sx/4:
                 spy = -sy / 2 + sx/4
-            slider_pos = (x,spy)
+            slider_pos = (self.x,spy)
             size = (sx,sx/2)
 
         elif self.direction == "left":
@@ -1505,27 +1635,50 @@ class slider:
                 spx = -sx / 2 + sy/4
             slider_pos = (spx,0)
             size = (sy/2,sy)
-        spx,spy = slider_pos
+        self.spx,self.spy = slider_pos
         sizex,sizey = size
-        sizex, sizey = sizex - self.theme.border*2, sizey  - self.theme.border*2
-        cx,cy = get_center(self.center,self.scale,self.pos,size=self.size)
-        pygame.draw.rect(self.display, self.tcolor, (cx+screenx+x+spx-sizex/2,cy+screeny+y+spy-sizey/2,sizex,sizey))
+        self.sizex, self.sizey = sizex - self.theme.border*2, sizey - self.theme.border*2
+        self.cx,self.cy = get_center(self.center,self.scale,self.pos,size=self.size)
+
         if int(self.value*100) == int(self.value*10)*10 and self.value != self.p_value:
             if self.audio:
                 pygame.mixer.Sound.play(self.sound)
 
         self.p_value = self.value
 
+    def render(self):
+        self.box.render()
+        pygame.draw.rect(self.display, self.tcolor,
+                         (self.cx + self.screenx + self.x + self.spx - self.sizex / 2, self.cy + self.screeny + self.y + self.spy - self.sizey / 2, self.sizex, self.sizey))
+
 
 def button_list(theme,pos,size,options,max,Input):
     for each in options:
-        if button(theme,pos,size,each,Input):
+        if Button(theme,pos,size,each,Input).render():
             return each
         pos += size[1]+5
 
 
+class RenderOrder:
+    def __init__(self,theme):
+        self.theme = theme
+        self.windows = []
+    def add_window(self,window):
+        self.windows.append(window)
+
+    def remove_window(self,window):
+        print(self.windows.index(window))
+
+    def sort_windows(self,window):
+        return window.last_click
+
+    def render(self):
+        self.windows.sort(key = self.sort_windows,reverse=True)
+        for window in self.windows:
+            window.render()
+
 class window:
-    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(0,0), max=(0,0)):
+    def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(10,10), max=(0,0)):
         self.theme = theme
         self.display = theme.display
         self.screen = theme.screen
@@ -1533,14 +1686,36 @@ class window:
         self.Input = Input
         self.pos = pos
         self.size = size
+        self.init_size = size
         self.name = name
-        self.resizeable =resizeable
+        self.resizeable = resizeable
         self.min = min
         self.max = max
         self.resizing = False
         self.smx = 0
         self.smy = 0
         self.dir = 0
+        self.selected = True
+        self.elements = []
+        self.last_click = self.Input.c_time
+
+        x, y = size
+
+        self.main_box = Box(self.theme, self.pos, self.size, resize = True)
+        self.title = Label(self.theme, (0, -y / 2 + 7.5), self.name, in_box=True, size=(x, 15),resize = True)
+        self.back = Button(self.theme, (x/2-22.5, -y / 2 +7.5),(15,15),"←",self.Input,resize = True)
+        self.close = Button(self.theme, (x/2-7.5, -y / 2 +7.5),(15,15),"X",self.Input,resize = True)
+
+        self.elements.append(self.main_box)
+        self.elements.append(self.title)
+        self.elements.append(self.back)
+        self.elements.append(self.close)
+
+
+
+    def add_element(self,element):
+        self.elements.append(element)
+
 
     def update(self):
         action = None
@@ -1550,148 +1725,227 @@ class window:
         size_x, size_y = self.size
         x2, y2 = size_x * self.scale, size_y * self.scale
         mx, my, mb = self.Input.mouse()
-        if self.resizeable:
-            if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
-#resize window <^v>
-                if y - y2 / 2 + self.theme.border * 3 > my:
-                    if x - x2 / 2 + self.theme.border * 3 > mx:
+
+        if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
+            if mb > 0:
+                self.selected = True
+                self.last_click = self.Input.c_time
+        else:
+            if mb > 0:
+                self.selected = False
+                self.last_click = self.Input.c_time
+
+        if self.selected:
+            if self.resizeable:
+                if x - x2 / 2 < mx < x + x2 / 2 and y - y2 / 2 < my < y + y2 / 2:
+    #resize window <^v>
+                    if y - y2 / 2 + self.theme.border * 3 > my:
+                        if x - x2 / 2 + self.theme.border * 3 > mx:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smx = mx
+                                self.smy = my
+                                self.dir = 6
+                            pygame.mouse.set_system_cursor(5)
+                        elif x + x2 / 2 - self.theme.border * 3 < mx:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smx = mx
+                                self.smy = my
+                                self.dir = 7
+                            pygame.mouse.set_system_cursor(6)
+                        else:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smy = my
+                                self.dir = 3
+                            pygame.mouse.set_system_cursor(8)
+                    elif y + y2 / 2 - self.theme.border * 3 < my:
+                        if x - x2 / 2 + self.theme.border * 3 > mx:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smx = mx
+                                self.smy = my
+                                self.dir = 8
+                            pygame.mouse.set_system_cursor(6)
+                        elif x + x2 / 2 - self.theme.border * 3 < mx:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smx = mx
+                                self.smy = my
+                                self.dir = 9
+                            pygame.mouse.set_system_cursor(5)
+                        else:
+                            if mb == 1:
+                                self.last_click = self.Input.c_time
+                                self.Input.clicked()
+                                self.resizing = True
+                                self.smy = my
+                                self.dir = 4
+                            pygame.mouse.set_system_cursor(8)
+                    elif x - x2 / 2 + self.theme.border * 3 > mx:
                         if mb == 1:
+                            self.last_click = self.Input.c_time
                             self.Input.clicked()
                             self.resizing = True
                             self.smx = mx
-                            self.smy = my
-                            self.dir = 6
-                        pygame.mouse.set_system_cursor(5)
+                            self.dir = 1
+                        pygame.mouse.set_system_cursor(7)
                     elif x + x2 / 2 - self.theme.border * 3 < mx:
                         if mb == 1:
                             self.Input.clicked()
+                            self.last_click = self.Input.c_time
                             self.resizing = True
                             self.smx = mx
-                            self.smy = my
-                            self.dir = 7
-                        pygame.mouse.set_system_cursor(6)
-                    else:
-                        if mb == 1:
-                            self.Input.clicked()
-                            self.resizing = True
-                            self.smy = my
-                            self.dir = 3
-                        pygame.mouse.set_system_cursor(8)
-                elif y + y2 / 2 - self.theme.border * 3 < my:
-                    if x - x2 / 2 + self.theme.border * 3 > mx:
-                        if mb == 1:
-                            self.Input.clicked()
-                            self.resizing = True
-                            self.smx = mx
-                            self.smy = my
-                            self.dir = 8
-                        pygame.mouse.set_system_cursor(6)
-                    elif x + x2 / 2 - self.theme.border * 3 < mx:
-                        if mb == 1:
-                            self.Input.clicked()
-                            self.resizing = True
-                            self.smx = mx
-                            self.smy = my
-                            self.dir = 9
-                        pygame.mouse.set_system_cursor(5)
-                    else:
-                        if mb == 1:
-                            self.Input.clicked()
-                            self.resizing = True
-                            self.smy = my
-                            self.dir = 4
-                        pygame.mouse.set_system_cursor(8)
-                elif x - x2 / 2 + self.theme.border * 3 > mx:
-                    if mb == 1:
-                        self.Input.clicked()
-                        self.resizing = True
-                        self.smx = mx
-                        self.dir = 1
-                    pygame.mouse.set_system_cursor(7)
-                elif x + x2 / 2 - self.theme.border * 3 < mx:
-                    if mb == 1:
-                        self.Input.clicked()
-                        self.resizing = True
-                        self.smx = mx
-                        self.dir = 2
-                    pygame.mouse.set_system_cursor(7)
-#move whole window
+                            self.dir = 2
+                        pygame.mouse.set_system_cursor(7)
 
-                elif my < (y - y2 / 2)+15*self.scale and mx < x+x2/2 - 30*self.scale:
-                    if mb == 1:
-                        self.Input.clicked()
-                        self.resizing = True
-                        self.smx = mx
-                        self.smy = my
-                        self.dir = 5
-                    pygame.mouse.set_system_cursor(9)
 
+    #move whole window
+
+                    elif my < (y - y2 / 2)+15*self.scale and mx < x+x2/2 - 30*self.scale:
+                        if mb == 1:
+                            self.Input.clicked()
+                            self.last_click = self.Input.c_time
+                            self.resizing = True
+                            self.smx = mx
+                            self.smy = my
+                            self.dir = 5
+                        pygame.mouse.set_system_cursor(9)
+
+                    elif not self.resizing:
+                        pygame.mouse.set_system_cursor(0)
                 elif not self.resizing:
                     pygame.mouse.set_system_cursor(0)
-            elif not self.resizing:
-                pygame.mouse.set_system_cursor(0)
-            if mb == -1 and self.resizing:
-                if self.dir == 1:
-                    dmx = (self.smx - mx)/ self.scale
-                    self.pos = (self.pos[0] - dmx / 2, self.pos[1])
-                    self.size = (self.size[0] + dmx, self.size[1])
-                elif self.dir == 2:
-                    dmx = (mx - self.smx)/ self.scale
-                    self.pos = (self.pos[0] + dmx / 2, self.pos[1])
-                    self.size = (self.size[0] + dmx, self.size[1])
-                elif self.dir == 3:
-                    dmy = (self.smy - my )/ self.scale
-                    self.pos = (self.pos[0], self.pos[1] - dmy / 2)
-                    self.size = (self.size[0], self.size[1] + dmy)
-                elif self.dir == 4:
-                    dmy = (self.smy - my)/ self.scale
-                    self.pos = (self.pos[0], self.pos[1] - dmy / 2)
-                    self.size = (self.size[0], self.size[1] - dmy)
-                elif self.dir == 5:
-                    dmx, dmy = (self.smx - mx) / self.scale, (self.smy - my) / self.scale
-                    self.pos = (self.pos[0] - dmx, self.pos[1] - dmy)
-                elif self.dir == 6:
-                    print("6")
-                    dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
-                    self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
-                    self.size = (self.size[0] + dmx, self.size[1] + dmy)
-                elif self.dir == 7:
-                    print("7")
-                    dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
-                    self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
-                    self.size = (self.size[0] - dmx, self.size[1] + dmy)
-                elif self.dir == 8:
-                    print("8")
-                    dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
-                    self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
-                    self.size = (self.size[0] + dmx, self.size[1] - dmy)
-                elif self.dir == 9:
-                    print("9")
-                    dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
-                    self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
-                    self.size = (self.size[0] - dmx, self.size[1] - dmy)
+                if mb == -1 and self.resizing:
+                    if self.dir == 1:
+                        dmx = (self.smx - mx)/ self.scale
+                        if self.size[0] + dmx > self.max[0] and self.max != (0,0):
+                            dmx = self.max[0]-self.size[0]
+                        if self.size[0] + dmx < self.min[0]:
+                            dmx = self.min[0]-self.size[0]
+                        self.pos = (self.pos[0] - dmx / 2, self.pos[1])
+                        self.size = (self.size[0] + dmx, self.size[1])
+                    elif self.dir == 2:
+                        dmx = (mx - self.smx)/ self.scale
+                        if self.size[0] + dmx > self.max[0] and self.max != (0,0):
+                            dmx = self.max[0]-self.size[0]
+                        if self.size[0] + dmx < self.min[0]:
+                            dmx = self.min[0]-self.size[0]
+                        self.pos = (self.pos[0] + dmx / 2, self.pos[1])
+                        self.size = (self.size[0] + dmx, self.size[1])
+                    elif self.dir == 3:
+                        dmy = (self.smy - my )/ self.scale
+                        if self.size[1] + dmy > self.max[1] and self.max != (0,0):
+                            dmy = self.max[1]-self.size[1]
+                        if self.size[1] + dmy < self.min[1]:
+                            dmy = self.min[1]-self.size[1]
+                        self.pos = (self.pos[0], self.pos[1] - dmy / 2)
+                        self.size = (self.size[0], self.size[1] + dmy)
+                    elif self.dir == 4:
+                        dmy = (self.smy - my)/ self.scale
+                        if self.size[1] - dmy > self.max[1] and self.max != (0,0):
+                            dmy = self.size[1] - self.max[1]
+                        if self.size[1] - dmy < self.min[1]:
+                            dmy = self.size[1]-self.min[1]
+                        self.pos = (self.pos[0], self.pos[1] - dmy / 2)
+                        self.size = (self.size[0], self.size[1] - dmy)
+                    elif self.dir == 5:
+                        dmx, dmy = (self.smx - mx) / self.scale, (self.smy - my) / self.scale
+                        self.pos = (self.pos[0] - dmx, self.pos[1] - dmy)
+                    elif self.dir == 6:
+                        dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
+                        if self.max != (0,0):
+                            if self.size[1] + dmy > self.max[1]:
+                                dmy = self.max[1]-self.size[1]
+                            if self.size[0] + dmx > self.max[0]:
+                                dmx = self.max[0]-self.size[0]
+                        if self.size[0] + dmx < self.min[0]:
+                            dmx = self.min[0]-self.size[0]
+                        if self.size[1] + dmy < self.min[1]:
+                            dmy = self.min[1]-self.size[1]
+                        self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
+                        self.size = (self.size[0] + dmx, self.size[1] + dmy)
+                    elif self.dir == 7:
+                        dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
+                        if self.max != (0,0):
+                            if self.size[1] + dmy > self.max[1]:
+                                dmy = self.max[1]-self.size[1]
+                            if self.size[0] - dmx > self.max[0]:
+                                dmx = self.size[0]-self.max[0]
+                        if self.size[0] - dmx < self.min[0]:
+                            dmx = self.size[0] - self.min[0]
+                        if self.size[1] + dmy < self.min[1]:
+                            dmy = self.min[1] - self.size[1]
+                        self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
+                        self.size = (self.size[0] - dmx, self.size[1] + dmy)
+                    elif self.dir == 8:
+                        dmx, dmy = (self.smx - mx) / self.scale, (self.smy - my) / self.scale
+                        if self.max != (0,0):
+                            if self.size[1] - dmy > self.max[1]:
+                                dmy = self.size[1]-self.max[1]
+                            if self.size[0] + dmx > self.max[0]:
+                                dmx = self.max[0]-self.size[0]
+                        if self.size[0] + dmx < self.min[0]:
+                            dmx = self.min[0]-self.size[0]
+                        if self.size[1] - dmy < self.min[1]:
+                            dmy = self.size[1] - self.min[1]
+                        self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
+                        self.size = (self.size[0] + dmx, self.size[1] - dmy)
+                    elif self.dir == 9:
+                        dmx, dmy = (self.smx - mx)/ self.scale, (self.smy - my)/ self.scale
+                        if self.max != (0,0):
+                            if self.size[1] - dmy > self.max[1]:
+                                dmy = self.size[1]-self.max[1]
+                            if self.size[0] - dmx > self.max[0]:
+                                dmx = self.size[0]-self.max[0]
+                        if self.size[0] - dmx < self.min[0]:
+                            dmx = self.size[0] - self.min[0]
+                        if self.size[1] - dmy < self.min[1]:
+                            dmy = self.size[1] - self.min[1]
+                        self.pos = (self.pos[0] - dmx / 2, self.pos[1] - dmy / 2)
+                        self.size = (self.size[0] - dmx, self.size[1] - dmy)
 
 
-            if mb == 0 and self.resizing:
-                self.resizing = False
-            self.smx, self.smy = mx, my
-            """
-            if self.min[0] > self.size[0]: self.size = (self.min[0],self.size[1])
-            if self.max[0] < self.size[0]: self.size = (self.max[0], self.size[1])
-            if self.min[1] > self.size[1]: self.size = (self.size[0],self.min[1])
-            if self.max[1] < self.size[1]: self.size = (self.size[0], self.max[1])
-            """
+                if mb == 0 and self.resizing:
+                    self.resizing = False
 
+                self.smx, self.smy = mx, my
+                if self.screen[1]+self.pos[1]*self.scale - self.size[1]*self.scale/2 < 0:
+                    self.pos = (self.pos[0],self.pos[1]-(self.screen[1]+self.pos[1]*self.scale - self.size[1]*self.scale/2)/self.scale)
+                if self.screen[1] + self.pos[1] * self.scale - (self.size[1] * self.scale / 2) + 15 * self.scale > self.theme.height:
+                    self.pos = (self.pos[0], self.pos[1] - ((self.screen[1] + self.pos[1] * self.scale - (self.size[1] * self.scale / 2) + 15 * self.scale) - self.theme.height)/self.scale)
 
         x,y = self.pos
         sx,sy = self.size
-        box(self.theme,self.pos,self.size)
-        lable(self.theme, (x, y - sy / 2 + 7.5), self.name, in_box=True, size=(sx, 15))
-        if button(self.theme, (x+sx/2 - 22.5, y - sy / 2 + 7.5),(15,15),"←",self.Input):
+
+        for element in self.elements:
+            element.update(self)
+
+
+        if self.back.state:
+            self.last_click = self.Input.c_time
             action = "back"
-        if button(self.theme, (x+sx/2 - 7.5, y - sy / 2 + 7.5),(15,15),"X",self.Input):
+        if self.close.state:
+            self.last_click = self.Input.c_time
             action = "close"
+
         return x, y, sx, sy, action
+
+    def render(self):
+        for element in self.elements:
+            element.render()
+
 
 class analog_stick:
     def __init__(self, theme, pos, size, name, Input, resizeable=False, min=(0,0), max=(0,0)):

@@ -9,10 +9,15 @@ import local_games
 import multiplayer_games
 import background as bgs
 import os
-import copy
 import PyChat as pc
 import traceback
 import ctypes
+import glstuff as gls
+
+import glfw
+import glfw.GLFW as GLFW_CONSTANTS
+from OpenGL.GL import *
+import numpy as np
 
 def load_config():
     try:
@@ -81,12 +86,17 @@ def get_position(player):
     return player.position
 
 
+
+"""
 #init pygame
 pygame.init()
 pygame.mixer.init()
 pygame.font.init()
 
 pygame.display.set_caption("Sbeve Co Games")
+"""
+
+
 
 #init some vars
 p_frame = time.perf_counter()
@@ -105,7 +115,7 @@ setting = False
 in_game = False
 mpgame = False
 pychat = False
-reset_screen = False
+reset_screen = True
 reload_players = False
 check_settings = False
 resolutions = ("3840x2160","1560x1600","2560x1440","1920x1440","1920x1200","1920x1080","1680x1050","1600x1200","1600x1024","1600x900","1440x900","1366x768","1360x768","1280x1024","1280x960","1280x800","1280x768","1280x720","1152x864","1024x768","800x600")
@@ -124,8 +134,22 @@ if __name__ == "__main__":
     except AttributeError:
         pass
 
+    # init glfw
+    glfw.init()
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MAJOR, 3)
+    glfw.window_hint(GLFW_CONSTANTS.GLFW_CONTEXT_VERSION_MINOR, 3)
+    glfw.window_hint(
+        GLFW_CONSTANTS.GLFW_OPENGL_PROFILE,
+        GLFW_CONSTANTS.GLFW_OPENGL_CORE_PROFILE
+    )
+    glfw.window_hint(
+        GLFW_CONSTANTS.GLFW_OPENGL_FORWARD_COMPAT,
+        GLFW_CONSTANTS.GLFW_TRUE
+    )
+
     config = load_config()
     theme = gui.Theme()
+
     theme.load_Theme(config)
     current_w = config["current_w"]
     current_h = config["current_h"]
@@ -138,29 +162,10 @@ if __name__ == "__main__":
 
     main_screen = ["main_menu"]
     sub_screen = ["main"]
-    background = pygame.surface.Surface((current_w, current_h))
-    bg = bgs.new_background(background,current_w,current_h)
+    #background = pygame.surface.Surface((current_w, current_h))
+    #bg = bgs.new_background(background,current_w,current_h)
     Input = gui.Input()
-
-
-    if screen_mode == "Fullscreen":
-        flags = pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF
-        print("Fullscreen")
-    elif screen_mode == "Borderless":
-        flags = pygame.NOFRAME | pygame.HWSURFACE | pygame.DOUBLEBUF
-        print("Borderless")
-    else:
-        flags = pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF
-        print("Windowed")
-    display = pygame.display.set_mode((current_w, current_h), flags, vsync=1, display=main_display)
-    print(current_w, current_h)
-    screen = (current_w / 2, current_h / 2)
-    screen_info = (display, screen, scale)
-    bg = bgs.new_background(display, current_w, current_h)
-    theme.screen_info(screen_info)
-    bg.reset()
-    popUp = gui.pop_up(theme, (0, -current_h / (2 * scale) - 25), (0, -current_h / (2 * scale) + 15), 2, 3, (300, 15),"™ © Patent Pending Sbeve Co. Inc LLC")
-    volume_gui = gui.slider(theme, (0, 0), (100, 15), "right", Input, volume)
+    Renderer = gui.RenderOrder(theme)
 
     Players = []
     numofplayers = 0
@@ -170,7 +175,7 @@ if __name__ == "__main__":
     if os.listdir("playerdata") == []:
         new_player = Player_class()
         pos = -screen[1] / scale/2+35
-        name = gui.lable_text(theme, (60, pos), (100, 20), "Name", "Enter name here")
+        name = gui.Label_text(theme, (60, pos), (100, 20), "Name", "Enter name here")
         pos+=25
         color1 = gui.color_picker(theme, (60, pos), (100, 20), "color 1")
         pos += 25
@@ -191,25 +196,34 @@ if __name__ == "__main__":
             if each.position == 1:
                 player = each
 
-
-
     while not done:
 #check if the scale has changed
         if reset_screen:
             reset_screen = False
             if screen_mode == "Fullscreen":
-                flags = pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF
+                flags = pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.OPENGL
                 print("Fullscreen")
             elif screen_mode == "Borderless":
-                flags = pygame.NOFRAME | pygame.HWSURFACE | pygame.DOUBLEBUF
+                flags = pygame.NOFRAME | pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.OPENGL
                 print("Borderless")
             else:
-                flags = pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF
+                flags = pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.OPENGL
                 print("Windowed")
-            display = pygame.display.set_mode((current_w, current_h), flags, vsync=1, display=main_display)
+
+            display = glfw.create_window(
+                current_w, current_h, "Sbeve Co Games", None, None)
+            glfw.make_context_current(display)
+
+            # init opengl after making context
+            glClearColor(0.1, 0.2, 0.2, 1)
+            triangle_vbo, triangle_vao = gls.build_triangle_mesh2()
+            quad_ebo, quad_vbo, quad_vao = gls.build_quad_mesh()
+            shader = gls.create_shader_program("Shaders/vertex.txt", "Shaders/fragment.txt")
             print(current_w, current_h)
             screen = (current_w / 2, current_h / 2)
             screen_info = (display, screen, scale)
+            theme.screen_info(screen_info)
+            """
             try:
                 bg = bgs.new_background(display, current_w, current_h)
             except:
@@ -219,6 +233,7 @@ if __name__ == "__main__":
             if pychat:
                 chat.reload()
             bg.reset()
+            """
 #reload all players
         if reload_players:
             reload_players = False
@@ -239,6 +254,14 @@ if __name__ == "__main__":
                 chat.player = player
 
     #user input
+        if glfw.get_key(display, GLFW_CONSTANTS.GLFW_KEY_ESCAPE) \
+                == GLFW_CONSTANTS.GLFW_PRESS:
+            break
+        glfw.poll_events()
+        if glfw.window_should_close(display):
+            done = True
+
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
@@ -247,7 +270,7 @@ if __name__ == "__main__":
                 reset_screen = True
                 current_w = event.w
                 current_h = event.h
-
+        """
             Input.get_input(event,frame)
         Input.update(frame)
 
@@ -286,7 +309,7 @@ if __name__ == "__main__":
 
 #main screen
 
-        display.fill((0, 0, 0))
+        #display.fill((0, 0, 0))
         if not in_game:
             try:
                 bg = bg.update()
@@ -300,7 +323,7 @@ if __name__ == "__main__":
                 if main_screen[-1] == "main_menu":
                     temp = theme.font
                     theme.font = pygame.font.SysFont("impact", 30 * scale)
-                    gui.lable(theme, (0, -current_h / (2 * scale) + 50), "Sbeve Co Games", in_box=True, size=(350, 40))
+                    gui.Label(theme, (0, -current_h / (2 * scale) + 50), "Sbeve Co Games", in_box=True, size=(350, 40)).render()
                     theme.font = temp
                     if sub_screen[-1] == "main":
                         if gui.button(theme, (0, -75), (100, 20), "Edit Player", Input):
@@ -309,10 +332,11 @@ if __name__ == "__main__":
                         if gui.button(theme, (0, -50), (100, 20), "Resume", Input):
                             main_screen.append("resume")
                             currentgames = []
-                            for each in os.listdir("saves/Current Games/"):
-                                with open(f"saves/Current Games/{each}","r") as file:
+                            if os.path.exists("saves/Current Games/"):
+                                for each in os.listdir("saves/Current Games/"):
+                                    with open(f"saves/Current Games/{each}","r") as file:
 
-                                    currentgames.append(json.dumps(file.read()))
+                                        currentgames.append(json.dumps(file.read()))
                             print(currentgames)
 
                         if gui.button(theme, (0, -25), (100, 20), "Random Game", Input):
@@ -322,6 +346,12 @@ if __name__ == "__main__":
                             if not n.is_connected():
                                 n.connect()
                             if n.is_connected():
+                                multiplayer_window = gui.window(theme, (0, 0), (240, 340), "Multiplayer", Input, resizeable=True, min=(240, 240))
+                                renderer.add_window(multiplayer_window)
+                                New_Lobby = gui.Button(theme, (240 / 2 - (240 + 240 / 5) / 2, 340 / 2 - 10), (240 - 240 / 5, 20),"New Lobby", Input)
+                                Refresh = gui.Button(theme, ((240 - 240 / 5) / 2, 340 / 2 - 10), (240 / 5, 20), "Refresh", Input)
+                                multiplayer_window.add_element(New_Lobby)
+                                multiplayer_window.add_element(Refresh)
                                 main_screen.append("multiplayer")
                                 servers = []
                             else:
@@ -341,8 +371,8 @@ if __name__ == "__main__":
 
                     if sub_screen[-1] == "Force New player":
                         gui.box(theme, (0, 0), (230, screen[1] / scale))
-                        gui.lable(theme, (0, -screen[1] / scale/2 + 10), "Create a New Player", in_box=True, size=(230, 20))
-                        gui.lable_text.update(name, Input)
+                        gui.Label(theme, (0, -screen[1] / scale/2 + 10), "Create a New Player", in_box=True, size=(230, 20))
+                        gui.Label_text.update(name, Input)
                         new_player.name = name.text
                         new_player.color1 = color1.get_color(Input)
                         new_player.color2 = color2.get_color(Input)
@@ -365,10 +395,10 @@ if __name__ == "__main__":
                             sub_screen.pop()
 
                 elif main_screen[-1] == "local_games":
-                    gui.lable(theme, (0, -current_h / (2 * scale) + 50), "Local Games", in_box=True, size=(150, 20))
+                    gui.Label(theme, (0, -current_h / (2 * scale) + 50), "Local Games", in_box=True, size=(150, 20)).render()
                     if sub_screen[-1] == "main":
                         pos = 15-(screen[1] / scale)/2
-                        gui.box(theme, (0, 0), (200, screen[1] / scale))
+                        gui.Box(theme, (0, 0), (200, screen[1] / scale)).render()
                         for game in localGames:
                             if gui.button(theme, (0, pos), (100, 20), game, Input):
                                 sub_screen.append(game)
@@ -424,16 +454,23 @@ if __name__ == "__main__":
                 elif main_screen[-1] == "multiplayer":
 
                     if sub_screen[-1] == "main":
-                        if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
+                        x,y,sx,sy,button = multiplayer_window.update()
+                        if button == "back" or button ==  "close":
+                            renderer.remove_window(multiplayer_window)
                             main_screen.pop()
 
-                        gui.lable(theme, (0, -current_h / (2 * scale) + 50), "Multiplayer", in_box=True, size=(150, 20))
-                        gui.box(theme,(0,0),(200,screen[1]/scale))
-                        if gui.button(theme,(-25,(screen[1]/scale)/2-10),(150,20),"New Server",Input):
-                            sub_screen.append("create_server")
-                            multiplayerGames = ["Snake","Connect 4"] # ["Dot Game","Snake","Flappy Bird"]
+                        if button == "New Lobby":
+                            New_Lobby = gui.window(theme, (0, 0), (400, 400), "Create Lobby", Input,resizeable=True, min=(400, 200))
+                            renderer.add_window(New_Lobby)
+                            lobby_name = gui.Text_Box(theme, (50,0), (260, 20), f"{player.name}'s Lobby", window = New_Lobby)
 
-                        if gui.button(theme,(75,(screen[1]/scale)/2-10),(50,20),"Refresh",Input):
+                            New_Lobby.add_element(lobby_name)
+                            New_Lobby.add_element(gui.Label(theme,(x-130,y),"Lobby Name", in_box=True,size= (100,20)))
+
+                            sub_screen.append("New_Lobby")
+                            #multiplayerGames = ["Dot Game","Snake","Connect 4"] # ["Dot Game","Snake","Flappy Bird"]
+
+                        if button == "Refresh":
                             n.send({"packet": "get_servers"})
 
                         data = n.receive("servers")
@@ -441,15 +478,24 @@ if __name__ == "__main__":
                         if data != None:
                             servers = data["servers"]
 
-                        pos = 15 - (screen[1] / scale) / 2
+                        pos = y-sy/2+50
                         for each in servers:
-                            if gui.button(theme, (0,pos), (100,20), str(each["name"]), Input):
+                            if gui.button(theme, (x,pos), (100,20), str(each["name"]), Input):
                                 sub_screen.append("join_server")
                                 properties_window = gui.window(theme,(0,0),(240, screen[1] / scale),"Properties",Input,resizeable=True,min = (240,40))
                                 n.send({"packet": "get_server_info","server":each["ID"]})
                                 server_ID = each["ID"]
                                 server = {}
                             pos += 25
+                    elif sub_screen[-1] == "New_Lobby":
+                        x,y,sx,sy,button = New_Lobby.update()
+                        lobby_name.update(Input)
+                        gui.Label(theme,(x-130,y),"Lobby Name", in_box=True,size= (100,20))
+                        if button == "back" or button ==  "close":
+                            print(button)
+                            sub_screen.pop()
+
+
 
                     elif sub_screen[-1] == "join_server":
                         x,y,sx,sy,button = properties_window.update()
@@ -458,8 +504,8 @@ if __name__ == "__main__":
                             server = data["server_info"]
                         pos = y - sy/2 + 30
                         for each in server:
-                            gui.lable(theme, (x-60, pos), str(each),in_box=True, size = (100, 20))
-                            gui.lable(theme, (x+60, pos), str(server[each]), in_box=True, size=(100, 20))
+                            gui.Label(theme, (x-60, pos), str(each),in_box=True, size = (100, 20))
+                            gui.Label(theme, (x+60, pos), str(server[each]), in_box=True, size=(100, 20))
                             pos += 25
                             if pos > y+sy/2-20:
                                 break
@@ -483,7 +529,7 @@ if __name__ == "__main__":
                             clients = data["data"]
                         pos = y - sy / 2 + 30
                         for name in clients:
-                            gui.lable(theme, (x, pos), clients[name], in_box=True, size=(100, 20))
+                            gui.Label(theme, (x, pos), clients[name], in_box=True, size=(100, 20))
                             pos += 25
                             if pos > y+sy/2-20:
                                 break
@@ -491,7 +537,7 @@ if __name__ == "__main__":
                             sub_screen.pop()
 
                     elif sub_screen[-1] == "create_server":
-                        gui.lable(theme, (0, -current_h / (2 * scale) + 50), "New Server", in_box=True, size=(150, 20))
+                        gui.Label(theme, (0, -current_h / (2 * scale) + 50), "New Server", in_box=True, size=(150, 20))
                         if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
                             sub_screen.pop()
                         gui.box(theme, (0, 0), (200, screen[1] / scale))
@@ -537,8 +583,14 @@ if __name__ == "__main__":
                         mpgame = True
                         sub_screen.pop()
 
+                    elif sub_screen[-1] == "Dot Game":
+                        game = multiplayer_games.Dot_Game(theme, Input, Players,n)
+                        in_game = True
+                        mpgame = True
+                        sub_screen.pop()
+
                 elif main_screen[-1] == "random":
-                    gui.lable(theme, (0, -current_h / (2 * scale) + 50), "Random Game", in_box=True, size=(150, 20))
+                    gui.Label(theme, (0, -current_h / (2 * scale) + 50), "Random Game", in_box=True, size=(150, 20))
                     gui.box(theme,(0,0),(200,screen[1]/scale))
                     if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
                         main_screen.pop()
@@ -551,10 +603,10 @@ if __name__ == "__main__":
                             sub_screen.pop()
 
                     if sub_screen[-1]  == "main":
-                        gui.lable(theme, (0, -current_h / (2 * scale) + 50), "Resume Game", in_box=True, size=(150, 20))
+                        gui.Label(theme, (0, -current_h / (2 * scale) + 50), "Resume Game", in_box=True, size=(150, 20))
                         gui.box(theme,(0,0),(200,screen[1]/scale))
                         if currentgames == []:
-                            gui.lable(theme, (0, -screen[1] / (2 * scale)+25), "No Games Found", in_box=True, size=(150, 20))
+                            gui.Label(theme, (0, -screen[1] / (2 * scale)+25), "No Games Found", in_box=True, size=(150, 20))
 
                         pos=25
                         for each in currentgames:
@@ -603,12 +655,12 @@ if __name__ == "__main__":
                         sub_screen.pop()
 
                 elif main_screen[-1]  == "Edit":
-                    gui.lable(theme, (0, -current_h / (2 * scale) + 75), "Player Editor", in_box=True, size=(150, 20))
+                    gui.Label(theme, (0, -current_h / (2 * scale) + 75), "Player Editor", in_box=True, size=(150, 20))
                     if sub_screen[-1] == "main":
                         if gui.button(theme, (0, -75), (100, 20), "New Player", Input):
                             new_player = Player_class()
                             pos = -screen[1] / scale / 2 + 35
-                            name = gui.lable_text(theme, (60, pos), (100, 20), "Name", "Enter name here")
+                            name = gui.Label_text(theme, (60, pos), (100, 20), "Name", "Enter name here")
                             pos += 25
                             color1 = gui.color_picker(theme, (60, pos), (100, 20), "color 1")
                             pos += 25
@@ -671,7 +723,7 @@ if __name__ == "__main__":
                         for player in Players:
                             if gui.button(theme, (0, pos), (100, 20),player.name, Input):
                                 current_player = player
-                                name = gui.lable_text(theme, (60, -25), (100, 20), "Name", current_player.name )
+                                name = gui.Label_text(theme, (60, -25), (100, 20), "Name", current_player.name )
                                 color1 = gui.color_picker(theme, (60, 0), (100, 20), "color 1",current_player.color1)
                                 color2 = gui.color_picker(theme, (60, 25), (100, 20), "color 2",current_player.color2)
                                 color3 = gui.color_picker(theme, (60, 50), (100, 20), "color 3",current_player.color3)
@@ -683,7 +735,7 @@ if __name__ == "__main__":
                             sub_screen.pop()
 
                     elif sub_screen[-1] == "edit":
-                        gui.lable_text.update(name,Input)
+                        gui.Label_text.update(name,Input)
                         current_player.color1 = color1.get_color(Input)
                         current_player.color2 = color2.get_color(Input)
                         current_player.color3 = color3.get_color(Input)
@@ -718,9 +770,9 @@ if __name__ == "__main__":
 
                     elif sub_screen[-1] == "New player":
                         gui.box(theme, (0, 0), (230, screen[1] / scale))
-                        gui.lable(theme, (0, -screen[1] / scale / 2 + 10), "Create a New Player", in_box=True,
+                        gui.Label(theme, (0, -screen[1] / scale / 2 + 10), "Create a New Player", in_box=True,
                                   size=(230, 20))
-                        gui.lable_text.update(name, Input)
+                        gui.Label_text.update(name, Input)
                         new_player.name = name.text
                         new_player.color1 = color1.get_color(Input)
                         new_player.color2 = color2.get_color(Input)
@@ -740,7 +792,7 @@ if __name__ == "__main__":
                         continue
 
                 elif main_screen[-1] == "Test":
-                    gui.lable(theme, (0, -current_h / (2 * scale) + 75), "Test Area", in_box=True, size=(150, 20))
+                    gui.Label(theme, (0, -current_h / (2 * scale) + 75), "Test Area", in_box=True, size=(150, 20))
                     if gui.button(theme, (0, -50), (100, 15), "connect to server", Input):
                         n.connect()
 
@@ -764,10 +816,6 @@ if __name__ == "__main__":
 
                     if gui.button(theme, (0, current_h / (2 * scale) - 15), (100, 20), "Back", Input):
                         main_screen.pop()
-
-                elif main_screen[-1] == "3D engine":
-                    Render.camera.control(Input)
-                    Render.object.draw()
 
                 else:
                     if main_screen[-1] != "settings":
@@ -810,14 +858,14 @@ if __name__ == "__main__":
 
                         if gui.button(theme, (0, 25), (100, 20), "Video Setting", Input):
                             sub_screen.append("Video Setting")
-                            scale_box = gui.lable_text(theme, (60, 0), (100, 20), "GUI Scale", scale)
+                            scale_box = gui.Label_text(theme, (60, 0), (100, 20), "GUI Scale", scale)
                             screen_size = gui.multiple_choice_input(theme, (60, -25), (100, 20), 'Resolution', str(current_w) + "x" + str(current_h), resolutions, 5)
                             window_modes = ["Fullscreen", "Windowed", "Borderless"]
                             window_mode = gui.multiple_choice_input(theme, (60, 25), (100, 20), 'Window Mode', screen_mode, window_modes, 5)
 
                         if gui.button(theme, (0, 50), (100, 20), "New Theme", Input):
                             sub_screen.append("Edit Theme")
-                            name = gui.lable_text(theme,(60,-50),(100,20),"Theme Name","Enter Name")
+                            name = gui.Label_text(theme,(60,-50),(100,20),"Theme Name","Enter Name")
                             t_color = gui.color_picker(theme, (60, -25), (100, 20), "Text color", color=tcolor)
                             b_color = gui.color_picker(theme, (60, 0), (100, 20), "Text border", color=bcolor)
                             bg_color = gui.color_picker(theme, (60, 25), (100, 20), "Text background", color=bgcolor)
@@ -829,14 +877,15 @@ if __name__ == "__main__":
                             sub_screen.append("audio")
 
                 if sub_screen[-1] == "audio":
-                    gui.lable_value(theme,(0,25),"Volume = ", volume,in_box = True,size = (100,20))
+                    gui.LabelValue(theme,(0,25),"Volume = ", volume,in_box = True,size = (100,20)).render()
                     volume_gui.update()
+                    volume_gui.render()
                     v = int(volume_gui.value*100)
                     theme.sounds(volume=v)
                     volume = v
 
                 elif sub_screen[-1] == "Video Setting":
-                    gui.lable_text.update(scale_box,Input)
+                    gui.Label_text.update(scale_box,Input)
                     screen_size.update(Input)
                     window_mode.update(Input)
 
@@ -869,7 +918,7 @@ if __name__ == "__main__":
                         if gui.button(theme, (-100, pos), (60, 20), "Edit", Input):
                             edit_theme = gui.Theme()
                             edit_theme.load_Theme(config,Theme)
-                            name = gui.lable_text(theme,(60,-50),(100,20),"Theme Name",Theme)
+                            name = gui.Label_text(theme,(60,-50),(100,20),"Theme Name",Theme)
                             t_color = gui.color_picker(theme, (60, -25), (100, 20), "Text color", edit_theme.tcolor)
                             b_color = gui.color_picker(theme, (60, 0), (100, 20), "Text border", edit_theme.bcolor)
                             bg_color = gui.color_picker(theme, (60, 25), (100, 20), "Text background", edit_theme.bgcolor)
@@ -897,7 +946,7 @@ if __name__ == "__main__":
                             if font[-3:] == "ttf":
                                 fonts.append(font[:-4])
                         fonts = gui.multiple_choice_input(theme,(0,0),(100,20),"font",theme.font_name,fonts,20)
-                        font_size = gui.lable_text(theme,(0,25),(100,20),"Font Size",12)
+                        font_size = gui.Label_text(theme,(0,25),(100,20),"Font Size",12)
                         main_screen.append("fonts")
 
                     if gui.button(theme, (0, current_h / (2 * scale) - 65), (100, 20), "Save Theme", Input):
@@ -915,7 +964,7 @@ if __name__ == "__main__":
                         except Exception as e:
                             traceback.print_exc()
                             popUp = gui.pop_up(theme,(0,-current_h/(2*scale)-25),(0,-current_h/(2*scale)+15),2,3,(300,15),f"Unable to save {name.text}. Error : {e}")
-                gui.lable(theme, (0, -current_h / (2 * scale) + 75), "Settings", in_box=True, size=(150, 20))
+                gui.Label(theme, (0, -current_h / (2 * scale) + 75), "Settings", in_box=True, size=(150, 20))
 
                 if gui.button(theme, (0, current_h / (2 * scale) - 40), (100, 20), "Quit To Desktop", Input):
                     done = True
@@ -937,6 +986,9 @@ if __name__ == "__main__":
                 else:
                     if chat.update(Input) == "close":
                         pychat = False
+
+            renderer.render()
+
 
         except Exception as e:
             traceback.print_exc()
@@ -960,22 +1012,23 @@ if __name__ == "__main__":
         if debug:
             if gui.button(theme, (-current_w/(2*scale)+15,current_h/(2*scale)-7.5 ), (30, 20), "Test", Input):
                 main_screen.append("Test")
-            gui.lable_value(theme, (0-current_w/(2*scale), 0-current_h/(2*scale)), "ping=", ping , center = "top_left", in_box = False)
-            gui.lable_value(theme, (0-current_w/(2*scale), 15-current_h/(2*scale)), "fps=", f"{round(fps,2)}/{config['target_fps']}", center ="top_left", in_box = False)
-            gui.lable_value(theme, (0 - current_w / (2 * scale), 30 - current_h / (2 * scale)), "Active Keys=",Input.Keys_pressed,center="top_left", in_box=False)
-            gui.lable_value(theme, (0 - current_w / (2 * scale), 45 - current_h / (2 * scale)), "Mouse",Input.mouse(),center="top_left", in_box=False)
+            gui.LabelValue(theme, (0-current_w/(2*scale), 0-current_h/(2*scale)), "ping=", ping , center = "top_left", in_box = False)
+            gui.LabelValue(theme, (0-current_w/(2*scale), 15-current_h/(2*scale)), "fps=", f"{round(fps,2)}/{config['target_fps']}", center ="top_left", in_box = False)
+            gui.LabelValue(theme, (0 - current_w / (2 * scale), 30 - current_h / (2 * scale)), "Active Keys=",Input.Keys_pressed,center="top_left", in_box=False)
+            gui.LabelValue(theme, (0 - current_w / (2 * scale), 45 - current_h / (2 * scale)), "Mouse",Input.mouse(),center="top_left", in_box=False)
             pygame.draw.line(display,(255,0,0),(0,screen[1]),(screen[0]*2,screen[1]))
             pygame.draw.line(display, (255, 0, 0), (screen[0],0), (screen[0], screen[1]*2))
 
         # pop ups
-        popUp.update()
+        #popUp.update()
         try:
             time.sleep((p_frame+1/config["target_fps"])-time.perf_counter())
         except:
             pass
         fps = 1 / (time.perf_counter() - p_frame)
         p_frame = time.perf_counter()
-        pygame.display.update()
+        glfw.swap_buffers(display)
+        #pygame.display.flip()
         frame+=1
 
 # make sure that video setting are usable
@@ -1031,5 +1084,8 @@ for player in Players:
     player.save_player()
 
 pygame.quit()
+triangle.destroy()
+glDeleteProgram(Shader)
+
 time.sleep(0.2)
 print("done")
