@@ -271,7 +271,8 @@ if __name__ == "__main__":
                 current_w = event.w
                 current_h = event.h
         """
-            Input.get_input(event,frame)
+        event = None
+        Input.get_input(event,frame)
         Input.update(frame)
 
         if main_screen == []:
